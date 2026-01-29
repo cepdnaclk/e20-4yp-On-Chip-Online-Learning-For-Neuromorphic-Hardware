@@ -13,14 +13,14 @@ title:
 
 #### Team
 
-- eNumber, Name, [email](mailto:name@email.com)
-- eNumber, Name, [email](mailto:name@email.com)
-- eNumber, Name, [email](mailto:name@email.com)
+- e20034, Bandara G.M.M.R., [email](mailto:e20034@eng.pdn.ac.lk)
+- e20280, Pathirage R.S., [email](mailto:e20280@eng.pdn.ac.lk)
+- e20385, Sriyarathna D.H., [email](mailto:e20385@eng.pdn.ac.lk)
 
 #### Supervisors
 
-- Name, [email](mailto:name@eng.pdn.ac.lk)
-- Name, [email](mailto:name@eng.pdn.ac.lk)
+- Prof.Roshan G. Ragel, [email](mailto:roshanr@eng.pdn.ac.lk)
+- Dr.Isuru Nawinne, [email](mailto:isurunawinne@eng.pdn.ac.lk)
 
 #### Table of content
 
