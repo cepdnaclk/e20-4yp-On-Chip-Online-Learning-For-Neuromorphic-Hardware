@@ -1,0 +1,139 @@
+# Simulation and waveform files
+*.vcd
+*.vvp
+*.fst
+*.ghw
+*.lxt
+*.lx2
+*.evcd
+
+# Compiled files
+*.o
+*.so
+*.a
+*.out
+*.exe
+
+# Build directories and artifacts
+build/
+*.build/
+work/
+xsim.dir/
+.Xil/
+_build/
+
+# Simulator specific files
+# Vivado
+*.jou
+*.log
+*.pb
+*.wdb
+*.wcfg
+vivado*.backup.*
+*.cache
+*.hw
+*.ip_user_files
+*.runs
+*.sim
+*.srcs
+*.gen
+
+# ModelSim/QuestaSim
+vsim.wlf
+transcript
+modelsim.ini
+work/
+*.mti
+*.mpf
+
+# Verilator
+obj_dir/
+*.d
+*.mk
+
+# Icarus Verilog
+*.vvp
+a.out
+
+# GHDL
+*.cf
+e~*.o
+
+# Synplify/Synopsys
+*.syr
+*.srr
+
+# Xilinx ISE
+*.ncd
+*.ngc
+*.ngd
+*.bgn
+*.bit
+*.drc
+*.ngr
+*.pad
+*.par
+*.pcf
+*.prj
+*.ptwx
+*.stx
+*.syr
+*.twr
+*.twx
+*.xpi
+*.xst
+*_summary.html
+*_usage.xml
+
+# Altera/Intel Quartus
+*.qpf
+*.qsf
+*.bak
+*.rpt
+*.summary
+*.smsg
+*.done
+*.pin
+*.sof
+*.pof
+*.qws
+db/
+incremental_db/
+output_files/
+
+# Lattice Diamond
+*.rds
+*.sty
+*.tws
+
+# OS specific
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.directory
+
+# IDE and editor files
+.vscode/
+.idea/
+*.sublime-*
+*.code-workspace
+
+# Python (for scripts)
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+venv/
+env/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Documentation build files
+docs/_site/
+docs/.jekyll-cache/
