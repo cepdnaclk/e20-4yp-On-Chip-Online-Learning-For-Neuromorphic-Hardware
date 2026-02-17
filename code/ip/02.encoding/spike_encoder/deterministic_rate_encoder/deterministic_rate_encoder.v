@@ -1,6 +1,6 @@
 
 
-module deterministic_Rate_Encoder (
+module deterministic_rate_encoder (
     input wire input_intensity_val,
     output reg spike_interval_output
 );

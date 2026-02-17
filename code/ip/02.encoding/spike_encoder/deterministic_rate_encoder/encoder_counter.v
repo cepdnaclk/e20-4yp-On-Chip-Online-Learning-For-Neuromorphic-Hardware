@@ -2,7 +2,7 @@
 `timescale 1ps/1ps
 
 // Internal Neuron Counter Module
-module encoder_Counter (
+module encoder_counter (
     input wire clock,
     input wire reset,
     input wire enable,
