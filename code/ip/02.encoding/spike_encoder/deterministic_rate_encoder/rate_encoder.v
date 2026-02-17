@@ -32,10 +32,19 @@ bit_extender_8_to_32 bit_extender_8_to_32_instance_01 (
     .output_wire(bit_extender_output_wire)
 );
 
+// Spiker module instance
+spiker_module spiker_module_instance_01 (
+    .clock(clock),
+    .spike_window_time_input(spike_window_time_reg),
+    .spiker_enable_input(spiker_enable_reg),
+    .spike_output(spike_encoded_output)
+);
+
 
 
 // Define parameters for the rate encoder logic
 reg[31:0] synap_time_window_reg = 32'h00000064; // Example time window for spike generation
+reg[31:0] spike_window_time_reg = 32'h00000002; // Register to set spike window time - how much time to set for high and low spike output
 
 
 // Registers to hold the current state 
@@ -47,7 +56,6 @@ reg synap_time_counter_enable_reg = 1'b0;
 reg synap_time_counter_reset_reg = 1'b0;
 reg spike_counter_enable_reg = 1'b0;
 reg spike_counter_reset_reg = 1'b0;
-reg spike_window_time_reg = 32'h00000000; // Register to set spike window time - how much time to set for high and low spike output
 reg spiker_enable_reg = 1'b0; // Register to enable the spiker to generate the spike output
 
 
