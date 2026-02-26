@@ -101,7 +101,7 @@ module stdp_cim_tile #(
                 weight_we <= 1;
                 
                 // Logic for Pre-Trace Update (Simple reset on spike)
-                pre_trace_next <= {1'b0, {(WEIGHT_WIDTH-1){1'b1}}};
+                pre_trace_next <= {1'b0, {(WEIGHT_WIDTH-1){1'b1}}}; // max trace value on spike
             end
         end
     end
