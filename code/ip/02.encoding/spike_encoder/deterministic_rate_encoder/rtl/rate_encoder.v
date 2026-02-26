@@ -44,7 +44,7 @@ spiker_module spiker_module_instance_01 (
 
 // Define parameters for the rate encoder logic
 reg[31:0] synap_time_window_reg = 32'h00000064; // Example time window for spike generation
-reg[31:0] spike_window_time_reg = 32'h00000002; // Register to set spike window time - how much time to set for high and low spike output
+reg[31:0] spike_window_time_reg = 32'h00000002; // Register to set spike window time - how much time to set for high and low spike output - assume that there will one less than the actual clock count.
 
 
 // Registers to hold the current state 
