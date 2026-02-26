@@ -1,59 +1,77 @@
-# STDP Engine Module
 
-Spike-Timing-Dependent Plasticity (STDP) learning engine - implements the core online learning mechanism for neuromorphic hardware.
+### Parameters
 
-## Overview
+- **DATA_WIDTH**: Bit-width for weights and traces (default 16 bits).
+- **ADDR_WIDTH**: Bit-width for synapse addressing (default 10 bits, so 1024 synapses).
+- **DECAY_SHIFT**: Controls the rate of exponential decay for traces (higher = slower decay).
+- **LTP_WINDOW, LTD_WINDOW**: Not directly used in this code, but typically set the potentiation/depression window.
+- **MAX_WEIGHT**: Maximum allowed value for a synaptic weight.
 
-STDP is a biological learning rule that adjusts synaptic weights based on the relative timing of pre- and post-synaptic spikes. This module implements STDP in hardware for on-chip learning.
+### Inputs
 
-## Directory Structure
+- **clk**: Clock signal for synchronous logic.
+- **rst_n**: Active-low reset signal.
+- **post_fire**: Indicates the neuron itself has fired (triggers LTP).
+- **pre_spike_in**: Indicates a specific input synapse has fired (triggers LTD).
+- **syn_addr**: Address of the synapse being processed (used for memory access).
+- **weight_in**: Current weight value read from RAM for the addressed synapse.
+- **pre_trace_in**: Current pre-synaptic trace value for the addressed synapse.
 
-- **rtl/**: RTL implementation
-  - `stdp_trace.v`: Trace update logic for pre/post-synaptic activity
-  - `weight_update.v`: Potentiation and depression logic
-- **tb/**: Testbenches
-  - `tb_stdp_engine.v`: STDP engine testbench
+### Outputs
 
-## Learning Rule
+- **weight_out**: Updated weight value to be written back to RAM.
+- **weight_we**: Write enable for weight memory (high when weight_out should be written).
+- **pre_trace_out**: Updated pre-synaptic trace value to be written back.
+- **trace_we**: Write enable for trace memory (high when pre_trace_out should be written).
 
-**Potentiation (LTP)**: If pre-synaptic spike occurs before post-synaptic spike
-```
-Δw = A+ * exp(-Δt/τ+)
-```
+### Internal Registers
 
-**Depression (LTD)**: If post-synaptic spike occurs before pre-synaptic spike
-```
-Δw = -A- * exp(-Δt/τ-)
-```
+- **post_trace**: Register holding the post-synaptic trace for the neuron itself. This value decays over time and is set to max when the neuron fires.
 
-## Features
+---
 
-- Hardware-efficient exponential approximation
-- Configurable learning rates
-- Trace-based implementation for efficiency
-- Weight bounds and saturation handling
+## Internal Functionality
 
-## Building and Testing
+### Post-Synaptic Trace Logic
 
-### Simulate
-```bash
-make sim
-```
+- **post_trace** is updated every clock cycle:
+  - On reset: set to 0.
+  - On neuron spike (**post_fire**): set to max value.
+  - Otherwise: decays exponentially (`post_trace = post_trace - (post_trace >> DECAY_SHIFT)`).
 
-### View Waveforms
-```bash
-make wave
-```
+### STDP Update Logic (always @(*))
 
-### Clean
-```bash
-make clean
-```
+- **weight_out**, **weight_we**, **pre_trace_out**, **trace_we** are combinatorially determined based on input events.
 
-## Parameters
+#### Case A: Pre-Synaptic Spike (**pre_spike_in**)
 
-- `A_PLUS`: Potentiation amplitude
-- `A_MINUS`: Depression amplitude
-- `TAU_PLUS`: Potentiation time constant
-- `TAU_MINUS`: Depression time constant
-- `W_MIN`, `W_MAX`: Weight bounds
+- **pre_trace_out**: Set to max (indicating a recent spike).
+- **trace_we**: Set high to write the updated trace.
+- **weight_out**: Decreased by a value proportional to **post_trace** (depression/LTD). If result would be negative, saturate at 0.
+- **weight_we**: Set high to write the updated weight.
+
+#### Case B: Post-Synaptic Spike (**post_fire**)
+
+- **pre_trace_out**: Decayed (passive decay step).
+- **trace_we**: Set high to write the updated trace.
+- **weight_out**: Increased by a value proportional to **pre_trace_in** (potentiation/LTP). If result would exceed **MAX_WEIGHT**, saturate at **MAX_WEIGHT**.
+- **weight_we**: Set high to write the updated weight.
+
+---
+
+## Summary Table
+
+| Name           | Type         | Usage/Functionality                                                                 |
+|----------------|--------------|-------------------------------------------------------------------------------------|
+| clk            | input wire   | Clock for synchronous logic                                                         |
+| rst_n          | input wire   | Active-low reset                                                                    |
+| post_fire      | input wire   | Indicates neuron fired (LTP event)                                                  |
+| pre_spike_in   | input wire   | Indicates input synapse fired (LTD event)                                           |
+| syn_addr       | input wire   | Address of synapse being processed                                                  |
+| weight_in      | input wire   | Current synaptic weight from memory                                                 |
+| weight_out     | output reg   | Updated synaptic weight to write back                                               |
+| weight_we      | output reg   | Write enable for weight memory                                                      |
+| pre_trace_in   | input wire   | Current pre-synaptic trace from memory                                              |
+| pre_trace_out  | output reg   | Updated pre-synaptic trace to write back                                            |
+| trace_we       | output reg   | Write enable for trace memory                                                       |
+| post_trace     | reg          | Neuron's own post-synaptic trace (decays, spikes on neuron fire)                    |
