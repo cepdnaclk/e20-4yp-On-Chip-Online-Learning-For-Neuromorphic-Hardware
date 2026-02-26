@@ -1,6 +1,5 @@
 // sram_model.v
 // Simple Dual-Port RAM model (Read/Write)
-// Optimized for "Wide" access (reading multiple weights at once)
 module sram_model #(
     parameter ADDR_WIDTH = 10,
     parameter DATA_WIDTH = 64  // Wide width (e.g. 4 neurons * 16-bit weights)
