@@ -137,3 +137,6 @@ env/
 # Documentation build files
 docs/_site/
 docs/.jekyll-cache/
+
+# Experiments that should not be committed
+*/experiments/
