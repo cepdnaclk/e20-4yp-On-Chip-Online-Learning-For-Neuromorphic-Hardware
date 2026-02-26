@@ -139,6 +139,9 @@ always @(posedge clock) begin
             // Disable the synaptic time counter
             synap_time_counter_enable_reg <= 1'b0;
 
+            // Disable the spiker until the next spike window starts
+            spiker_enable_reg <= 1'b0;
+
         end 
         else if (synap_time_counter_output_wire < synap_time_window_reg) begin
 
