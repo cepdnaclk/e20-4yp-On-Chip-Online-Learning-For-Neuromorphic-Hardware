@@ -1,6 +1,6 @@
 module bit_extender_8_to_32 (
     input wire [7:0] input_8_bit,
-    output wire [31:0] output_wire
+    output reg [31:0] output_wire
 );
 
 always @(input_8_bit) begin
