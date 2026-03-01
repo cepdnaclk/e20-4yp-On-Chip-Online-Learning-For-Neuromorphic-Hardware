@@ -32,7 +32,7 @@ module stdp_cim_tile #(
     reg processing_spike;
     reg [NUM_NEURONS-1:0] latch_fire_vec;
 
-    // --- 1. INSTANTIATE MEMORIES (From File 1) ---
+    // --- 1. INSTANTIATE MEMORIES ---
     sram_model #(.ADDR_WIDTH(ADDR_WIDTH), .DATA_WIDTH(WEIGHT_WIDTH))
         pre_trace_mem (
             .clk(clk), .write_en(pre_trace_we), .addr(input_addr),
@@ -45,7 +45,7 @@ module stdp_cim_tile #(
             .data_in(weight_row_out), .data_out(weight_row_in)
         );
 
-    // --- 2. INSTANTIATE LOGIC (From File 2) ---
+    // --- 2. INSTANTIATE LOGIC ---
     // We generate N instances of the logic block, one for each neuron column.
     genvar i;
     generate
