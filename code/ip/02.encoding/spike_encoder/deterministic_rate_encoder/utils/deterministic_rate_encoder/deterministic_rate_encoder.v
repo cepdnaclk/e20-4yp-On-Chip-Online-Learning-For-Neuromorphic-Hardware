@@ -1,11 +1,11 @@
 
 
 module deterministic_rate_encoder (
-    input wire input_intensity_val,
-    output reg spike_interval_output
+    input wire [7:0] input_intensity_val,
+    output wire [7:0] spike_interval_output
 );
 
-reg mem [0:255]; // Memory to store the spike intervals for each pixel intensity value (0-255)
+reg [7:0] mem [0:255]; // Memory to store the spike intervals for each pixel intensity value (0-255)
 
 initial begin
     mem[0] = 8'b01100100;
