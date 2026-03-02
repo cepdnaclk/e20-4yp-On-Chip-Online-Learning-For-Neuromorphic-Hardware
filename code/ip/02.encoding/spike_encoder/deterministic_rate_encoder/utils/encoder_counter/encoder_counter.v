@@ -10,7 +10,7 @@ module encoder_counter (
 );
 
 // Defining registers
-reg [31:0] count_reg = 32'b0;
+reg [31:0] count_reg = 32'b1; // Initialize to 1 to avoid zero count at the start
 
 // Assigning output
 assign count = count_reg;
@@ -21,8 +21,8 @@ always @(posedge clock or posedge reset) begin
     // Reset condition
     if (reset) begin
 
-        // Reset count to zero
-        count_reg <= 32'b0;
+        // Reset count to one (to avoid zero count)
+        count_reg <= 32'b1;
 
     // Increment condition
     end else if (enable) begin
