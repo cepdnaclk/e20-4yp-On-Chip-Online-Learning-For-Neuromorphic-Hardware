@@ -3,43 +3,42 @@
 
 module stdp_update_logic #(
     parameter WEIGHT_WIDTH = 16,
-    parameter MAX_WEIGHT   = 16'h7FFF
+    parameter MAXIMUM_WEIGHT = 16'h7FFF
 )(
-    input  wire [WEIGHT_WIDTH-1:0] weight_in,
-    input  wire [WEIGHT_WIDTH-1:0] pre_trace,      // Shared Row Trace
-    input  wire [WEIGHT_WIDTH-1:0] post_trace,     // Local Column Trace
-    input  wire                    pre_spike_valid, // Event: Input Spiked
-    input  wire                    post_fire,       // Event: Neuron Fired
+    input  wire [WEIGHT_WIDTH-1:0] input_weight,                
+    input  wire [WEIGHT_WIDTH-1:0] pre_synaptic_trace,          
+    input  wire [WEIGHT_WIDTH-1:0] post_synaptic_trace,         
+    input  wire                    pre_synaptic_spike_is_valid, 
+    input  wire                    post_synaptic_neuron_fire,   
     
-    output reg  [WEIGHT_WIDTH-1:0] weight_out
+    output reg  [WEIGHT_WIDTH-1:0] output_weight                
 );
 
+    reg [WEIGHT_WIDTH-1:0] intermediate_depressed_weight; // Added to prevent combinational loops
+
     always @(*) begin
-        // Default: Keep weight same
-        weight_out = weight_in;
-
-        // --- LTD (Depression) ---
+        // --- LTD (Depression) Phase ---
         // Input spiked, but neuron fired long ago (Anti-Causal)
-        if (pre_spike_valid) begin
-            if (weight_in > (post_trace >> 2)) 
-                weight_out = weight_in - (post_trace >> 2);
+        if (pre_synaptic_spike_is_valid) begin
+            if (input_weight > (post_synaptic_trace >> 2))
+                intermediate_depressed_weight = input_weight - (post_synaptic_trace >> 2);
             else 
-                weight_out = 0;
+                intermediate_depressed_weight = 0;
+        end else begin
+            intermediate_depressed_weight = input_weight; // Keep original if no pre-spike
         end
 
-        // --- LTP (Potentiation) ---
+        // --- LTP (Potentiation) Phase ---
         // Neuron firing NOW, Input was active recently (Causal)
-        // Note: We use the output of the LTD block as input here to handle
-        // simultaneous events (rare but possible).
-        if (pre_spike_valid && post_fire) begin
-             if ((weight_out + (pre_trace >> 2)) < MAX_WEIGHT)
-                weight_out = weight_out + (pre_trace >> 2);
+        // Note: Independent evaluation allows true asynchronous STDP updates if architecture supports it
+        if (post_synaptic_neuron_fire) begin
+             if ((intermediate_depressed_weight + (pre_synaptic_trace >> 2)) < MAXIMUM_WEIGHT)
+                output_weight = intermediate_depressed_weight + (pre_synaptic_trace >> 2);
              else 
-                weight_out = MAX_WEIGHT;
+                output_weight = MAXIMUM_WEIGHT;
+        end else begin
+             output_weight = intermediate_depressed_weight; // Keep depressed/original if no post-fire
         end
-        // If only post_fire happens (without pre_spike valid for this row),
-        // we technically don't update this specific synapse in this architecture
-        // because we only fetch rows on input events. 
     end
 
 endmodule

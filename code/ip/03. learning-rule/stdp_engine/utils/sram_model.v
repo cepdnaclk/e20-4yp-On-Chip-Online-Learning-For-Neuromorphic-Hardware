@@ -1,23 +1,30 @@
-// sram_model.v
-// Simple Dual-Port RAM model (Read/Write)
+// Filename: sram_model.v
+// Description: Simple Dual-Port RAM model (Separate Read and Write ports)
+
 module sram_model #(
-    parameter ADDR_WIDTH = 10,
-    parameter DATA_WIDTH = 64  // Wide width (e.g. 4 neurons * 16-bit weights)
+    parameter ADDRESS_WIDTH = 10, // Renamed from ADDR_WIDTH
+    parameter DATA_WIDTH = 64  
 )(
-    input wire clk,
-    input wire write_en,
-    input wire [ADDR_WIDTH-1:0] addr,
-    input wire [DATA_WIDTH-1:0] data_in,
-    output reg [DATA_WIDTH-1:0] data_out
+    input wire clock,                  // Renamed from clk
+    input wire write_enable,           // Renamed from write_en
+    input wire [ADDRESS_WIDTH-1:0] read_address,  // Added separate read address
+    input wire [ADDRESS_WIDTH-1:0] write_address, // Added separate write address
+    input wire [DATA_WIDTH-1:0] write_data,       // Renamed from data_in
+    output reg [DATA_WIDTH-1:0] read_data         // Renamed from data_out
 );
 
     // In FPGA this infers Block RAM (BRAM)
-    reg [DATA_WIDTH-1:0] memory [0:(2**ADDR_WIDTH)-1];
+    reg [DATA_WIDTH-1:0] memory_array [0:(2**ADDRESS_WIDTH)-1];
 
-    always @(posedge clk) begin
-        if (write_en) begin
-            memory[addr] <= data_in;
+    // Read operation (Synchronous)
+    always @(posedge clock) begin
+        read_data <= memory_array[read_address];
+    end
+
+    // Write operation (Synchronous)
+    always @(posedge clock) begin
+        if (write_enable) begin
+            memory_array[write_address] <= write_data;
         end
-        data_out <= memory[addr];
     end
 endmodule
