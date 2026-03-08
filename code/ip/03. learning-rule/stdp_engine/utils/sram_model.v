@@ -2,15 +2,15 @@
 // Description: Simple Dual-Port RAM model (Separate Read and Write ports)
 
 module sram_model #(
-    parameter ADDRESS_WIDTH = 10, // Renamed from ADDR_WIDTH
-    parameter DATA_WIDTH = 64  
+    parameter ADDRESS_WIDTH = 10,
+    parameter DATA_WIDTH = 64
 )(
-    input wire clock,                  // Renamed from clk
-    input wire write_enable,           // Renamed from write_en
+    input wire clock,
+    input wire write_enable,
     input wire [ADDRESS_WIDTH-1:0] read_address,  // Added separate read address
     input wire [ADDRESS_WIDTH-1:0] write_address, // Added separate write address
-    input wire [DATA_WIDTH-1:0] write_data,       // Renamed from data_in
-    output reg [DATA_WIDTH-1:0] read_data         // Renamed from data_out
+    input wire [DATA_WIDTH-1:0] write_data,
+    output reg [DATA_WIDTH-1:0] read_data
 );
 
     // In FPGA this infers Block RAM (BRAM)

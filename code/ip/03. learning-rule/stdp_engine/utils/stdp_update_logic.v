@@ -5,13 +5,13 @@ module stdp_update_logic #(
     parameter WEIGHT_WIDTH = 16,
     parameter MAXIMUM_WEIGHT = 16'h7FFF
 )(
-    input  wire [WEIGHT_WIDTH-1:0] input_weight,                
-    input  wire [WEIGHT_WIDTH-1:0] pre_synaptic_trace,          
-    input  wire [WEIGHT_WIDTH-1:0] post_synaptic_trace,         
+    input  wire [WEIGHT_WIDTH-1:0] input_weight,
+    input  wire [WEIGHT_WIDTH-1:0] pre_synaptic_trace,
+    input  wire [WEIGHT_WIDTH-1:0] post_synaptic_trace,
     input  wire                    pre_synaptic_spike_is_valid, 
-    input  wire                    post_synaptic_neuron_fire,   
+    input  wire                    post_synaptic_neuron_fire,
     
-    output reg  [WEIGHT_WIDTH-1:0] output_weight                
+    output reg  [WEIGHT_WIDTH-1:0] output_weight
 );
 
     reg [WEIGHT_WIDTH-1:0] intermediate_depressed_weight; // Added to prevent combinational loops

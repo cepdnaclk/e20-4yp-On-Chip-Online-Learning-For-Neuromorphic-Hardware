@@ -1,0 +1,91 @@
+[*]
+[*] GTKWave Analyzer v3.3.126 (w)1999-2026 BSI
+[*] Fri Mar  6 07:38:50 2026
+[*]
+[dumpfile] "/home/ravindu/Documents/My_Projects/FYP/e20-4yp-On-Chip-Online-Learning-For-Neuromorphic-Hardware/code/ip/03. learning-rule/stdp_engine/tb/stdp_simulation.vcd"
+[dumpfile_mtime] "Fri Mar  6 04:35:31 2026"
+[dumpfile_size] 7869
+[savefile] "/home/ravindu/Documents/My_Projects/FYP/e20-4yp-On-Chip-Online-Learning-For-Neuromorphic-Hardware/code/ip/03. learning-rule/stdp_engine/tb/tb_arrangement.gtkw"
+[timestart] 0
+[size] 1912 999
+[pos] -1 -1
+*-15.155929 84500 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb_stdp_cim_tile.
+[treeopen] tb_stdp_cim_tile.dut.
+[sst_width] 290
+[signals_width] 334
+[sst_expanded] 1
+[sst_vpaned_height] 296
+@28
+tb_stdp_cim_tile.clock
+@22
+tb_stdp_cim_tile.flat_neuron_post_synaptic_traces[31:0]
+@24
+tb_stdp_cim_tile.input_address[3:0]
+@28
+tb_stdp_cim_tile.input_is_valid
+@c00029
+tb_stdp_cim_tile.neuron_fire_vector[1:0]
+@28
+(0)tb_stdp_cim_tile.neuron_fire_vector[1:0]
+(1)tb_stdp_cim_tile.neuron_fire_vector[1:0]
+@1401201
+-group_end
+@28
+tb_stdp_cim_tile.reset_active_low
+@200
+-
+@c00024
+[color] 7
+tb_stdp_cim_tile.dut.current_state[1:0]
+@28
+(0)tb_stdp_cim_tile.dut.current_state[1:0]
+(1)tb_stdp_cim_tile.dut.current_state[1:0]
+@1401200
+-group_end
+@200
+-
+-pre_synap_trace
+@28
+tb_stdp_cim_tile.dut.pre_synaptic_trace_memory.write_enable
+@24
+tb_stdp_cim_tile.dut.pre_synaptic_trace_memory.read_address[3:0]
+@22
+tb_stdp_cim_tile.dut.pre_synaptic_trace_memory.read_data[15:0]
+@24
+tb_stdp_cim_tile.dut.pre_synaptic_trace_memory.write_address[3:0]
+@22
+tb_stdp_cim_tile.dut.pre_synaptic_trace_memory.write_data[15:0]
+@200
+-
+-weight_memory
+@28
+tb_stdp_cim_tile.dut.weight_memory.write_enable
+@24
+tb_stdp_cim_tile.dut.weight_memory.read_address[3:0]
+@22
+tb_stdp_cim_tile.dut.weight_memory.read_data[31:0]
+@24
+tb_stdp_cim_tile.dut.weight_memory.write_address[3:0]
+@22
+tb_stdp_cim_tile.dut.weight_memory.write_data[31:0]
+@200
+-
+-STDP0
+@420
+tb_stdp_cim_tile.dut.generate_stdp_logic[0].neuron_index
+@22
+tb_stdp_cim_tile.dut.generate_stdp_logic[0].individual_post_synaptic_trace[15:0]
+tb_stdp_cim_tile.dut.generate_stdp_logic[0].individual_weight_input[15:0]
+tb_stdp_cim_tile.dut.generate_stdp_logic[0].individual_weight_output[15:0]
+@200
+-
+-STDP1
+@420
+tb_stdp_cim_tile.dut.generate_stdp_logic[1].neuron_index
+@22
+tb_stdp_cim_tile.dut.generate_stdp_logic[1].individual_post_synaptic_trace[15:0]
+tb_stdp_cim_tile.dut.generate_stdp_logic[1].individual_weight_input[15:0]
+tb_stdp_cim_tile.dut.generate_stdp_logic[1].individual_weight_output[15:0]
+[pattern_trace] 1
+[pattern_trace] 0
