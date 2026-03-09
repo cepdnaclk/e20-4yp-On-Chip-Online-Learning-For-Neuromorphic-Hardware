@@ -44,7 +44,7 @@ module tb_stdp_cim_tile;
     // --- VCD Dump for GTKWave ---
     integer memory_index; // Used for looping through memory addresses
     initial begin
-        $dumpfile("stdp_simulation.vcd");
+        $dumpfile("stdp_cim_tile.vcd");
         // Dump all standard signals in the testbench and DUT
         $dumpvars(0, tb_stdp_cim_tile); 
 
