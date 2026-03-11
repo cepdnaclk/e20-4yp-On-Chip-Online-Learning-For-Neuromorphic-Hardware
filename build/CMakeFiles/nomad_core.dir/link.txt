@@ -1,0 +1,2 @@
+/usr/bin/ar qc libnomad_core.a CMakeFiles/nomad_core.dir/src/core/module.cpp.o
+/usr/bin/ranlib libnomad_core.a

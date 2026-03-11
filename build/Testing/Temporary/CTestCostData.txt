@@ -1,0 +1,6 @@
+FixedPointTests 2 0.00105243
+SignalTests 2 0.000644825
+PRNGTests 2 0.000852777
+EvolutionTests 2 0.000749362
+IntegrationTests 1 0.0469707
+---

@@ -1,0 +1,1 @@
+/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/test_prng.dir/link.d CMakeFiles/test_prng.dir/tests/test_prng.cpp.o -o test_prng  libnomad_core.a

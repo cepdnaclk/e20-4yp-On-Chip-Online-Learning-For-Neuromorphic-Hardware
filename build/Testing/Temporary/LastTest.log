@@ -1,0 +1,131 @@
+Start testing: Mar 06 11:26 +0530
+----------------------------------------------------------
+1/5 Testing: FixedPointTests
+1/5 Test: FixedPointTests
+Command: "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/test_fixed_point"
+Directory: /mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build
+"FixedPointTests" start time: Mar 06 11:26 +0530
+Output:
+----------------------------------------------------------
+=== FixedPoint Tests ===
+  test_construction ... PASS
+  test_addition ... PASS
+  test_subtraction ... PASS
+  test_multiplication ... PASS
+  test_division ... PASS
+  test_saturation ... PASS
+  test_comparison ... PASS
+  test_bitwise ... PASS
+  test_negation ... PASS
+  test_shift ... PASS
+=== All FixedPoint tests passed ===
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"FixedPointTests" end time: Mar 06 11:26 +0530
+"FixedPointTests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/5 Testing: SignalTests
+2/5 Test: SignalTests
+Command: "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/test_signal"
+Directory: /mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build
+"SignalTests" start time: Mar 06 11:26 +0530
+Output:
+----------------------------------------------------------
+=== Signal & Module Tests ===
+  test_signal_read_write ... PASS
+  test_signal_listener ... PASS
+  test_signal_force ... PASS
+  test_module_passthrough ... PASS
+  test_module_chain ... PASS
+  test_posedge_negedge ... PASS
+  test_counter_module ... PASS
+  test_module_hierarchy ... PASS
+=== All Signal & Module tests passed ===
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"SignalTests" end time: Mar 06 11:26 +0530
+"SignalTests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/5 Testing: PRNGTests
+3/5 Test: PRNGTests
+Command: "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/test_prng"
+Directory: /mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build
+"PRNGTests" start time: Mar 06 11:26 +0530
+Output:
+----------------------------------------------------------
+=== PRNG Tests ===
+  test_determinism ... PASS
+  test_different_seeds ... PASS
+  test_no_zero_lock ... PASS
+  test_uniqueness ... PASS
+  test_next_float_range ... PASS
+  test_next_fixed ... PASS
+  test_next_int_bound ... PASS
+  test_seed_reset ... PASS
+  test_zero_seed_protection ... PASS
+=== All PRNG tests passed ===
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"PRNGTests" end time: Mar 06 11:26 +0530
+"PRNGTests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/5 Testing: EvolutionTests
+4/5 Test: EvolutionTests
+Command: "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/test_evolution"
+Directory: /mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build
+"EvolutionTests" start time: Mar 06 11:26 +0530
+Output:
+----------------------------------------------------------
+=== Evolution Tests ===
+  test_genotype_construction ... PASS
+  test_genotype_randomize ... PASS
+  test_genotype_bitstream_roundtrip ... PASS
+  test_tournament_selection ... PASS
+  test_crossover_produces_valid_child ... PASS
+  test_mutation_changes_genome ... PASS
+  test_mutation_preserves_structure ... PASS
+  test_eu_initial_state ... PASS
+  test_eu_trigger_cycle ... PASS
+  test_eu_auto_trigger ... PASS
+  test_eu_multi_generation ... PASS
+=== All Evolution tests passed ===
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"EvolutionTests" end time: Mar 06 11:26 +0530
+"EvolutionTests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/5 Testing: IntegrationTests
+5/5 Test: IntegrationTests
+Command: "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/test_integration"
+Directory: /mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build
+"IntegrationTests" start time: Mar 06 11:26 +0530
+Output:
+----------------------------------------------------------
+=== Integration Tests (Phase 4) ===
+  test_environment_single_evaluation ... PASS (fitness=3.1875)
+  test_environment_population_evaluation ... PASS (any_nonzero=yes)
+  test_system_runs ... PASS (best=3.1875 gen=5)
+  test_evolution_fitness_tracking ... PASS (gen0_best=3.1875 gen19_best=3.1875 overall_best=3.1875)
+  test_larger_population ... PASS (best=3.1875)
+=== All Integration tests passed ===
+<end of output>
+Test time =   0.05 sec
+----------------------------------------------------------
+Test Passed.
+"IntegrationTests" end time: Mar 06 11:26 +0530
+"IntegrationTests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Mar 06 11:26 +0530
