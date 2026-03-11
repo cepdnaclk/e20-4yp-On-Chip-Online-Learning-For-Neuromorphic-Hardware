@@ -1,55 +1,55 @@
 [
 {
   "directory": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build",
-  "command": "/usr/bin/c++  -I\"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/include\" -std=gnu++17 -o CMakeFiles/nomad_core.dir/src/core/module.cpp.o -c \"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/src/core/module.cpp\"",
+  "command": "/usr/bin/c++  -I\"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/include\" -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/nomad_core.dir/src/core/module.cpp.o -c \"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/src/core/module.cpp\"",
   "file": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/src/core/module.cpp",
   "output": "CMakeFiles/nomad_core.dir/src/core/module.cpp.o"
 },
 {
   "directory": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build",
-  "command": "/usr/bin/c++  -I\"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/include\" -std=gnu++17 -o CMakeFiles/nomad_eons.dir/sim/main.cpp.o -c \"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/sim/main.cpp\"",
+  "command": "/usr/bin/c++  -I\"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/include\" -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/nomad_eons.dir/sim/main.cpp.o -c \"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/sim/main.cpp\"",
   "file": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/sim/main.cpp",
   "output": "CMakeFiles/nomad_eons.dir/sim/main.cpp.o"
 },
 {
   "directory": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build",
-  "command": "/usr/bin/c++  -I\"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/include\" -std=gnu++17 -o CMakeFiles/test_fixed_point.dir/tests/test_fixed_point.cpp.o -c \"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_fixed_point.cpp\"",
+  "command": "/usr/bin/c++  -I\"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/include\" -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/test_fixed_point.dir/tests/test_fixed_point.cpp.o -c \"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_fixed_point.cpp\"",
   "file": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_fixed_point.cpp",
   "output": "CMakeFiles/test_fixed_point.dir/tests/test_fixed_point.cpp.o"
 },
 {
   "directory": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build",
-  "command": "/usr/bin/c++  -I\"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/include\" -std=gnu++17 -o CMakeFiles/test_signal.dir/tests/test_signal.cpp.o -c \"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_signal.cpp\"",
+  "command": "/usr/bin/c++  -I\"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/include\" -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/test_signal.dir/tests/test_signal.cpp.o -c \"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_signal.cpp\"",
   "file": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_signal.cpp",
   "output": "CMakeFiles/test_signal.dir/tests/test_signal.cpp.o"
 },
 {
   "directory": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build",
-  "command": "/usr/bin/c++  -I\"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/include\" -std=gnu++17 -o CMakeFiles/test_prng.dir/tests/test_prng.cpp.o -c \"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_prng.cpp\"",
+  "command": "/usr/bin/c++  -I\"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/include\" -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/test_prng.dir/tests/test_prng.cpp.o -c \"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_prng.cpp\"",
   "file": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_prng.cpp",
   "output": "CMakeFiles/test_prng.dir/tests/test_prng.cpp.o"
 },
 {
   "directory": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build",
-  "command": "/usr/bin/c++  -I\"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/include\" -std=gnu++17 -o CMakeFiles/test_evolution.dir/tests/test_evolution.cpp.o -c \"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_evolution.cpp\"",
+  "command": "/usr/bin/c++  -I\"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/include\" -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/test_evolution.dir/tests/test_evolution.cpp.o -c \"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_evolution.cpp\"",
   "file": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_evolution.cpp",
   "output": "CMakeFiles/test_evolution.dir/tests/test_evolution.cpp.o"
 },
 {
   "directory": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build",
-  "command": "/usr/bin/c++  -I\"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/include\" -std=gnu++17 -o CMakeFiles/test_integration.dir/tests/test_integration.cpp.o -c \"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_integration.cpp\"",
+  "command": "/usr/bin/c++  -I\"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/include\" -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/test_integration.dir/tests/test_integration.cpp.o -c \"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_integration.cpp\"",
   "file": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_integration.cpp",
   "output": "CMakeFiles/test_integration.dir/tests/test_integration.cpp.o"
 },
 {
   "directory": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build",
-  "command": "/usr/bin/c++  -I\"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/include\" -std=gnu++17 -o CMakeFiles/nomad_mnist.dir/sim/mnist_main.cpp.o -c \"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/sim/mnist_main.cpp\"",
+  "command": "/usr/bin/c++  -I\"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/include\" -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/nomad_mnist.dir/sim/mnist_main.cpp.o -c \"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/sim/mnist_main.cpp\"",
   "file": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/sim/mnist_main.cpp",
   "output": "CMakeFiles/nomad_mnist.dir/sim/mnist_main.cpp.o"
 },
 {
   "directory": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build",
-  "command": "/usr/bin/c++  -I\"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/include\" -std=gnu++17 -o CMakeFiles/test_mnist.dir/tests/test_mnist.cpp.o -c \"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_mnist.cpp\"",
+  "command": "/usr/bin/c++  -I\"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/include\" -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/test_mnist.dir/tests/test_mnist.cpp.o -c \"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_mnist.cpp\"",
   "file": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_mnist.cpp",
   "output": "CMakeFiles/test_mnist.dir/tests/test_mnist.cpp.o"
 }

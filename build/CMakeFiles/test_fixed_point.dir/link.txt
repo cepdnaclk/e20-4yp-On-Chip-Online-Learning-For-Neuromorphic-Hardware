@@ -1,1 +1,1 @@
-/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/test_fixed_point.dir/link.d CMakeFiles/test_fixed_point.dir/tests/test_fixed_point.cpp.o -o test_fixed_point  libnomad_core.a
+/usr/bin/c++ -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/test_fixed_point.dir/link.d CMakeFiles/test_fixed_point.dir/tests/test_fixed_point.cpp.o -o test_fixed_point  libnomad_core.a

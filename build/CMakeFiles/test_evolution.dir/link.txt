@@ -1,1 +1,1 @@
-/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/test_evolution.dir/link.d CMakeFiles/test_evolution.dir/tests/test_evolution.cpp.o -o test_evolution  libnomad_core.a
+/usr/bin/c++ -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/test_evolution.dir/link.d CMakeFiles/test_evolution.dir/tests/test_evolution.cpp.o -o test_evolution  libnomad_core.a
