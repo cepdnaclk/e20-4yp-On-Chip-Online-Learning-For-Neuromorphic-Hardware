@@ -40,5 +40,17 @@
   "command": "/usr/bin/c++  -I\"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/include\" -std=gnu++17 -o CMakeFiles/test_integration.dir/tests/test_integration.cpp.o -c \"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_integration.cpp\"",
   "file": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_integration.cpp",
   "output": "CMakeFiles/test_integration.dir/tests/test_integration.cpp.o"
+},
+{
+  "directory": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build",
+  "command": "/usr/bin/c++  -I\"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/include\" -std=gnu++17 -o CMakeFiles/nomad_mnist.dir/sim/mnist_main.cpp.o -c \"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/sim/mnist_main.cpp\"",
+  "file": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/sim/mnist_main.cpp",
+  "output": "CMakeFiles/nomad_mnist.dir/sim/mnist_main.cpp.o"
+},
+{
+  "directory": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build",
+  "command": "/usr/bin/c++  -I\"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/include\" -std=gnu++17 -o CMakeFiles/test_mnist.dir/tests/test_mnist.cpp.o -c \"/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_mnist.cpp\"",
+  "file": "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/tests/test_mnist.cpp",
+  "output": "CMakeFiles/test_mnist.dir/tests/test_mnist.cpp.o"
 }
 ]

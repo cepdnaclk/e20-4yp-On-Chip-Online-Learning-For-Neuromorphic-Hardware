@@ -64,3 +64,11 @@ add_test(NAME EvolutionTests COMMAND test_evolution)
 add_executable(test_integration tests/test_integration.cpp)
 target_link_libraries(test_integration PRIVATE nomad_core)
 add_test(NAME IntegrationTests COMMAND test_integration)
+
+# ── MNIST targets ──────────────────────────────────────────────
+add_executable(nomad_mnist sim/mnist_main.cpp)
+target_link_libraries(nomad_mnist PRIVATE nomad_core)
+
+add_executable(test_mnist tests/test_mnist.cpp)
+target_link_libraries(test_mnist PRIVATE nomad_core)
+add_test(NAME MNISTTests COMMAND test_mnist)

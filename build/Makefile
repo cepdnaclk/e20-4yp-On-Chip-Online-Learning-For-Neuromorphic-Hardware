@@ -217,6 +217,32 @@ test_integration/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration.dir/build.make CMakeFiles/test_integration.dir/build
 .PHONY : test_integration/fast
 
+#=============================================================================
+# Target rules for targets named nomad_mnist
+
+# Build rule for target.
+nomad_mnist: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 nomad_mnist
+.PHONY : nomad_mnist
+
+# fast build rule for target.
+nomad_mnist/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nomad_mnist.dir/build.make CMakeFiles/nomad_mnist.dir/build
+.PHONY : nomad_mnist/fast
+
+#=============================================================================
+# Target rules for targets named test_mnist
+
+# Build rule for target.
+test_mnist: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_mnist
+.PHONY : test_mnist
+
+# fast build rule for target.
+test_mnist/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_mnist.dir/build.make CMakeFiles/test_mnist.dir/build
+.PHONY : test_mnist/fast
+
 sim/main.o: sim/main.cpp.o
 .PHONY : sim/main.o
 
@@ -240,6 +266,30 @@ sim/main.s: sim/main.cpp.s
 sim/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/nomad_eons.dir/build.make CMakeFiles/nomad_eons.dir/sim/main.cpp.s
 .PHONY : sim/main.cpp.s
+
+sim/mnist_main.o: sim/mnist_main.cpp.o
+.PHONY : sim/mnist_main.o
+
+# target to build an object file
+sim/mnist_main.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nomad_mnist.dir/build.make CMakeFiles/nomad_mnist.dir/sim/mnist_main.cpp.o
+.PHONY : sim/mnist_main.cpp.o
+
+sim/mnist_main.i: sim/mnist_main.cpp.i
+.PHONY : sim/mnist_main.i
+
+# target to preprocess a source file
+sim/mnist_main.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nomad_mnist.dir/build.make CMakeFiles/nomad_mnist.dir/sim/mnist_main.cpp.i
+.PHONY : sim/mnist_main.cpp.i
+
+sim/mnist_main.s: sim/mnist_main.cpp.s
+.PHONY : sim/mnist_main.s
+
+# target to generate assembly for a file
+sim/mnist_main.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nomad_mnist.dir/build.make CMakeFiles/nomad_mnist.dir/sim/mnist_main.cpp.s
+.PHONY : sim/mnist_main.cpp.s
 
 src/core/module.o: src/core/module.cpp.o
 .PHONY : src/core/module.o
@@ -337,6 +387,30 @@ tests/test_integration.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration.dir/build.make CMakeFiles/test_integration.dir/tests/test_integration.cpp.s
 .PHONY : tests/test_integration.cpp.s
 
+tests/test_mnist.o: tests/test_mnist.cpp.o
+.PHONY : tests/test_mnist.o
+
+# target to build an object file
+tests/test_mnist.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_mnist.dir/build.make CMakeFiles/test_mnist.dir/tests/test_mnist.cpp.o
+.PHONY : tests/test_mnist.cpp.o
+
+tests/test_mnist.i: tests/test_mnist.cpp.i
+.PHONY : tests/test_mnist.i
+
+# target to preprocess a source file
+tests/test_mnist.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_mnist.dir/build.make CMakeFiles/test_mnist.dir/tests/test_mnist.cpp.i
+.PHONY : tests/test_mnist.cpp.i
+
+tests/test_mnist.s: tests/test_mnist.cpp.s
+.PHONY : tests/test_mnist.s
+
+# target to generate assembly for a file
+tests/test_mnist.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_mnist.dir/build.make CMakeFiles/test_mnist.dir/tests/test_mnist.cpp.s
+.PHONY : tests/test_mnist.cpp.s
+
 tests/test_prng.o: tests/test_prng.cpp.o
 .PHONY : tests/test_prng.o
 
@@ -396,14 +470,19 @@ help:
 	@echo "... test"
 	@echo "... nomad_core"
 	@echo "... nomad_eons"
+	@echo "... nomad_mnist"
 	@echo "... test_evolution"
 	@echo "... test_fixed_point"
 	@echo "... test_integration"
+	@echo "... test_mnist"
 	@echo "... test_prng"
 	@echo "... test_signal"
 	@echo "... sim/main.o"
 	@echo "... sim/main.i"
 	@echo "... sim/main.s"
+	@echo "... sim/mnist_main.o"
+	@echo "... sim/mnist_main.i"
+	@echo "... sim/mnist_main.s"
 	@echo "... src/core/module.o"
 	@echo "... src/core/module.i"
 	@echo "... src/core/module.s"
@@ -416,6 +495,9 @@ help:
 	@echo "... tests/test_integration.o"
 	@echo "... tests/test_integration.i"
 	@echo "... tests/test_integration.s"
+	@echo "... tests/test_mnist.o"
+	@echo "... tests/test_mnist.i"
+	@echo "... tests/test_mnist.s"
 	@echo "... tests/test_prng.o"
 	@echo "... tests/test_prng.i"
 	@echo "... tests/test_prng.s"

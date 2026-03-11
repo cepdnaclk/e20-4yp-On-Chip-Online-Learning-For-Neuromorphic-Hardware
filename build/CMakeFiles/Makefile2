@@ -70,6 +70,8 @@ all: CMakeFiles/test_signal.dir/all
 all: CMakeFiles/test_prng.dir/all
 all: CMakeFiles/test_evolution.dir/all
 all: CMakeFiles/test_integration.dir/all
+all: CMakeFiles/nomad_mnist.dir/all
+all: CMakeFiles/test_mnist.dir/all
 .PHONY : all
 
 # The main recursive "codegen" target.
@@ -80,6 +82,8 @@ codegen: CMakeFiles/test_signal.dir/codegen
 codegen: CMakeFiles/test_prng.dir/codegen
 codegen: CMakeFiles/test_evolution.dir/codegen
 codegen: CMakeFiles/test_integration.dir/codegen
+codegen: CMakeFiles/nomad_mnist.dir/codegen
+codegen: CMakeFiles/test_mnist.dir/codegen
 .PHONY : codegen
 
 # The main recursive "preinstall" target.
@@ -94,6 +98,8 @@ clean: CMakeFiles/test_signal.dir/clean
 clean: CMakeFiles/test_prng.dir/clean
 clean: CMakeFiles/test_evolution.dir/clean
 clean: CMakeFiles/test_integration.dir/clean
+clean: CMakeFiles/nomad_mnist.dir/clean
+clean: CMakeFiles/test_mnist.dir/clean
 .PHONY : clean
 
 #=============================================================================
@@ -167,7 +173,7 @@ CMakeFiles/nomad_eons.dir/clean:
 CMakeFiles/test_fixed_point.dir/all: CMakeFiles/nomad_core.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_fixed_point.dir/build.make CMakeFiles/test_fixed_point.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_fixed_point.dir/build.make CMakeFiles/test_fixed_point.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=7,8 "Built target test_fixed_point"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=9,10 "Built target test_fixed_point"
 .PHONY : CMakeFiles/test_fixed_point.dir/all
 
 # Build rule for subdir invocation for target.
@@ -184,7 +190,7 @@ test_fixed_point: CMakeFiles/test_fixed_point.dir/rule
 # codegen rule for target.
 CMakeFiles/test_fixed_point.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_fixed_point.dir/build.make CMakeFiles/test_fixed_point.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=7,8 "Finished codegen for target test_fixed_point"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=9,10 "Finished codegen for target test_fixed_point"
 .PHONY : CMakeFiles/test_fixed_point.dir/codegen
 
 # clean rule for target.
@@ -199,7 +205,7 @@ CMakeFiles/test_fixed_point.dir/clean:
 CMakeFiles/test_signal.dir/all: CMakeFiles/nomad_core.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_signal.dir/build.make CMakeFiles/test_signal.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_signal.dir/build.make CMakeFiles/test_signal.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=13,14 "Built target test_signal"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=17,18 "Built target test_signal"
 .PHONY : CMakeFiles/test_signal.dir/all
 
 # Build rule for subdir invocation for target.
@@ -216,7 +222,7 @@ test_signal: CMakeFiles/test_signal.dir/rule
 # codegen rule for target.
 CMakeFiles/test_signal.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_signal.dir/build.make CMakeFiles/test_signal.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=13,14 "Finished codegen for target test_signal"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=17,18 "Finished codegen for target test_signal"
 .PHONY : CMakeFiles/test_signal.dir/codegen
 
 # clean rule for target.
@@ -231,7 +237,7 @@ CMakeFiles/test_signal.dir/clean:
 CMakeFiles/test_prng.dir/all: CMakeFiles/nomad_core.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_prng.dir/build.make CMakeFiles/test_prng.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_prng.dir/build.make CMakeFiles/test_prng.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=11,12 "Built target test_prng"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=15,16 "Built target test_prng"
 .PHONY : CMakeFiles/test_prng.dir/all
 
 # Build rule for subdir invocation for target.
@@ -248,7 +254,7 @@ test_prng: CMakeFiles/test_prng.dir/rule
 # codegen rule for target.
 CMakeFiles/test_prng.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_prng.dir/build.make CMakeFiles/test_prng.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=11,12 "Finished codegen for target test_prng"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=15,16 "Finished codegen for target test_prng"
 .PHONY : CMakeFiles/test_prng.dir/codegen
 
 # clean rule for target.
@@ -263,7 +269,7 @@ CMakeFiles/test_prng.dir/clean:
 CMakeFiles/test_evolution.dir/all: CMakeFiles/nomad_core.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_evolution.dir/build.make CMakeFiles/test_evolution.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_evolution.dir/build.make CMakeFiles/test_evolution.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=5,6 "Built target test_evolution"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=7,8 "Built target test_evolution"
 .PHONY : CMakeFiles/test_evolution.dir/all
 
 # Build rule for subdir invocation for target.
@@ -280,7 +286,7 @@ test_evolution: CMakeFiles/test_evolution.dir/rule
 # codegen rule for target.
 CMakeFiles/test_evolution.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_evolution.dir/build.make CMakeFiles/test_evolution.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=5,6 "Finished codegen for target test_evolution"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=7,8 "Finished codegen for target test_evolution"
 .PHONY : CMakeFiles/test_evolution.dir/codegen
 
 # clean rule for target.
@@ -295,7 +301,7 @@ CMakeFiles/test_evolution.dir/clean:
 CMakeFiles/test_integration.dir/all: CMakeFiles/nomad_core.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration.dir/build.make CMakeFiles/test_integration.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration.dir/build.make CMakeFiles/test_integration.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=9,10 "Built target test_integration"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=11,12 "Built target test_integration"
 .PHONY : CMakeFiles/test_integration.dir/all
 
 # Build rule for subdir invocation for target.
@@ -312,13 +318,77 @@ test_integration: CMakeFiles/test_integration.dir/rule
 # codegen rule for target.
 CMakeFiles/test_integration.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration.dir/build.make CMakeFiles/test_integration.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=9,10 "Finished codegen for target test_integration"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=11,12 "Finished codegen for target test_integration"
 .PHONY : CMakeFiles/test_integration.dir/codegen
 
 # clean rule for target.
 CMakeFiles/test_integration.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration.dir/build.make CMakeFiles/test_integration.dir/clean
 .PHONY : CMakeFiles/test_integration.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/nomad_mnist.dir
+
+# All Build rule for target.
+CMakeFiles/nomad_mnist.dir/all: CMakeFiles/nomad_core.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nomad_mnist.dir/build.make CMakeFiles/nomad_mnist.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nomad_mnist.dir/build.make CMakeFiles/nomad_mnist.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=5,6 "Built target nomad_mnist"
+.PHONY : CMakeFiles/nomad_mnist.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/nomad_mnist.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" 4
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/nomad_mnist.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" 0
+.PHONY : CMakeFiles/nomad_mnist.dir/rule
+
+# Convenience name for target.
+nomad_mnist: CMakeFiles/nomad_mnist.dir/rule
+.PHONY : nomad_mnist
+
+# codegen rule for target.
+CMakeFiles/nomad_mnist.dir/codegen:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nomad_mnist.dir/build.make CMakeFiles/nomad_mnist.dir/codegen
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=5,6 "Finished codegen for target nomad_mnist"
+.PHONY : CMakeFiles/nomad_mnist.dir/codegen
+
+# clean rule for target.
+CMakeFiles/nomad_mnist.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nomad_mnist.dir/build.make CMakeFiles/nomad_mnist.dir/clean
+.PHONY : CMakeFiles/nomad_mnist.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/test_mnist.dir
+
+# All Build rule for target.
+CMakeFiles/test_mnist.dir/all: CMakeFiles/nomad_core.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_mnist.dir/build.make CMakeFiles/test_mnist.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_mnist.dir/build.make CMakeFiles/test_mnist.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=13,14 "Built target test_mnist"
+.PHONY : CMakeFiles/test_mnist.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/test_mnist.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" 4
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/test_mnist.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" 0
+.PHONY : CMakeFiles/test_mnist.dir/rule
+
+# Convenience name for target.
+test_mnist: CMakeFiles/test_mnist.dir/rule
+.PHONY : test_mnist
+
+# codegen rule for target.
+CMakeFiles/test_mnist.dir/codegen:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_mnist.dir/build.make CMakeFiles/test_mnist.dir/codegen
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/CMakeFiles" --progress-num=13,14 "Finished codegen for target test_mnist"
+.PHONY : CMakeFiles/test_mnist.dir/codegen
+
+# clean rule for target.
+CMakeFiles/test_mnist.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_mnist.dir/build.make CMakeFiles/test_mnist.dir/clean
+.PHONY : CMakeFiles/test_mnist.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

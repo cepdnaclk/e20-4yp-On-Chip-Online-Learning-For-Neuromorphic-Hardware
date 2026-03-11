@@ -14,3 +14,5 @@ add_test(EvolutionTests "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build
 set_tests_properties(EvolutionTests PROPERTIES  _BACKTRACE_TRIPLES "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/CMakeLists.txt;62;add_test;/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/CMakeLists.txt;0;")
 add_test(IntegrationTests "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/test_integration")
 set_tests_properties(IntegrationTests PROPERTIES  _BACKTRACE_TRIPLES "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/CMakeLists.txt;66;add_test;/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/CMakeLists.txt;0;")
+add_test(MNISTTests "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/build/test_mnist")
+set_tests_properties(MNISTTests PROPERTIES  _BACKTRACE_TRIPLES "/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/CMakeLists.txt;74;add_test;/mnt/New Volume/Academic/FYP/model_NOC/NOMAD_EONS/CMakeLists.txt;0;")
