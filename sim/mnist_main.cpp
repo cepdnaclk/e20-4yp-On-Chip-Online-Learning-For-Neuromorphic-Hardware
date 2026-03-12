@@ -9,14 +9,14 @@
 ///   ./nomad_mnist <data_dir> [generations] [population_size] [seed]
 
 #include "core/fixed_point.h"
+#include "core/module.h"
+#include "core/signal.h"
 #include "env/mnist_environment.h"
 #include "env/mnist_loader.h"
 #include "evo/evolution_unit.h"
 #include "evo/genotype.h"
 #include "memory/memory_cluster.h"
 #include "noc/noc_mesh.h"
-#include "core/module.h"
-#include "core/signal.h"
 #include <algorithm>
 #include <cstdlib>
 #include <iomanip>
@@ -28,8 +28,8 @@ using namespace nomad;
 
 // Forward declaration.
 float compute_val_accuracy(const Genotype &genotype, const MNISTLoader &loader,
-                            int offset, int count,
-                            const MNISTEnvironment::Config &cfg);
+                           int offset, int count,
+                           const MNISTEnvironment::Config &cfg);
 
 /// @brief Holds a snapshot of a genotype and its fitness for top-3 tracking.
 struct ModelRecord {
@@ -43,7 +43,7 @@ struct ModelRecord {
 int main(int argc, char *argv[]) {
   if (argc < 2) {
     std::cerr << "Usage: " << argv[0]
-              << " <data_dir> [generations] [population_size] [seed]\n\n"
+              << " <data_dir> [generations] [population_size] [num_neurons] [num_synapses] [mutation_rate] [seed]\n\n"
               << "  data_dir: directory with train-images-idx3-ubyte and "
                  "train-labels-idx1-ubyte\n";
     return 1;
@@ -54,19 +54,28 @@ int main(int argc, char *argv[]) {
   // ── Configuration ──────────────────────────────────────────
   int num_generations = 30;
   int population_size = 20;
+  int target_neurons = 200;
+  int target_synapses = 400;
+  float mutation_rate = 0.1f;
   uint32_t seed = 0xDEADBEEF;
 
   if (argc >= 3) num_generations = std::atoi(argv[2]);
   if (argc >= 4) population_size = std::atoi(argv[3]);
-  if (argc >= 5) seed = static_cast<uint32_t>(std::atol(argv[4]));
+  if (argc >= 5) target_neurons = std::atoi(argv[4]);
+  if (argc >= 6) target_synapses = std::atoi(argv[5]);
+  if (argc >= 7) mutation_rate = std::atof(argv[6]);
+  if (argc >= 8) seed = static_cast<uint32_t>(std::atol(argv[7]));
 
   if (num_generations <= 0) num_generations = 30;
   if (population_size < 4) population_size = 4;
+  if (target_neurons < 59) target_neurons = 59; // Minimum required for 49 inputs + 10 outputs
+  if (target_synapses <= 0) target_synapses = 200;
+  if (mutation_rate < 0.0f || mutation_rate > 1.0f) mutation_rate = 0.08f;
 
   // ── Load full MNIST training data ──────────────────────────
   std::cout << "Loading MNIST dataset from: " << data_dir << "\n";
   MNISTLoader full_loader;
-  if (!full_loader.load(data_dir, true, 0)) {  // Load ALL training data
+  if (!full_loader.load(data_dir, true, 0)) { // Load ALL training data
     std::cerr << "Error: failed to load MNIST. Ensure directory contains:\n"
               << "  train-images-idx3-ubyte\n  train-labels-idx1-ubyte\n";
     return 1;
@@ -89,18 +98,20 @@ int main(int argc, char *argv[]) {
   // [train_count .. total). We load the full set and use an offset
   // in the validation environment config.
   MNISTLoader val_loader;
-  val_loader.load(data_dir, true, 0);  // Load all
+  val_loader.load(data_dir, true, 0); // Load all
 
   // ── Environment configs ────────────────────────────────────
   MNISTEnvironment::Config train_env_cfg;
-  train_env_cfg.pixel_stride = 4;        // 7x7 = 49 input neurons
+  train_env_cfg.pixel_stride = 4; // 7x7 = 49 input neurons
   train_env_cfg.cycles_per_sample = 30;
-  train_env_cfg.num_eval_samples = 100;   // Evaluate on 100 training samples per genotype
+  train_env_cfg.num_eval_samples =
+      200; // Evaluate on 200 training samples per genotype
 
   MNISTEnvironment::Config val_env_cfg;
   val_env_cfg.pixel_stride = 4;
   val_env_cfg.cycles_per_sample = 30;
-  val_env_cfg.num_eval_samples = val_count; // Evaluate on ALL validation samples
+  val_env_cfg.num_eval_samples =
+      val_count; // Evaluate on ALL validation samples
 
   // Create training and validation environments
   MNISTEnvironment train_env(train_env_cfg, train_loader);
@@ -108,15 +119,15 @@ int main(int argc, char *argv[]) {
 
   // ── Evolution Unit config ──────────────────────────────────
   int num_inputs = train_env_cfg.num_input_neurons(); // 49
-  int num_hidden = 141; // Adjusted for 200 total neurons
+  int num_hidden = target_neurons - num_inputs - 10; // Adjusted for target_neurons total neurons
   int num_outputs = 10; // digits 0-9
-  int total_neurons = num_inputs + num_hidden + num_outputs;
+  int total_neurons = num_inputs + num_hidden + num_outputs; // Should equal target_neurons
 
   EvolutionUnit::Config eu_cfg;
   eu_cfg.population_size = population_size;
   eu_cfg.num_neurons = total_neurons;
-  eu_cfg.num_synapses = 200;
-  eu_cfg.mutation_rate = 0.08f;
+  eu_cfg.num_synapses = target_synapses;
+  eu_cfg.mutation_rate = mutation_rate;
   eu_cfg.elitism_count = 3;
   eu_cfg.mesh_width = 3;
   eu_cfg.mesh_height = 3;
@@ -135,23 +146,28 @@ int main(int argc, char *argv[]) {
   std::vector<ModelRecord> top3;
 
   // ── Print header ───────────────────────────────────────────
-  std::cout
-    << "╔════════════════════════════════════════════════════════════════════════╗\n"
-    << "║            NOMAD-EONS MNIST SNN Evolution (Train/Val)                ║\n"
-    << "╠════════════════════════════════════════════════════════════════════════╣\n"
-    << "║  Population: " << std::setw(4) << population_size
-    << "   Neurons: " << std::setw(3) << total_neurons
-    << "   Synapses: " << std::setw(3) << eu_cfg.num_synapses
-    << "   Seed: " << std::setw(10) << seed << "  ║\n"
-    << "║  Mutation:  " << std::setw(5) << std::fixed << std::setprecision(2)
-    << eu_cfg.mutation_rate
-    << "   Elitism: " << std::setw(3) << eu_cfg.elitism_count
-    << "   Stride: " << train_env_cfg.pixel_stride
-    << "   Inputs: " << std::setw(3) << num_inputs
-    << "              ║\n"
-    << "╠════════════════════════════════════════════════════════════════════════╣\n"
-    << "║ Gen │ Best Fit │ Avg Fit  │ Worst    │ Train Acc │ Val Acc │ Top-3?  ║\n"
-    << "╠═════╪══════════╪══════════╪══════════╪═══════════╪═════════╪═════════╣\n";
+  std::cout << "╔══════════════════════════════════════════════════════════════"
+               "══════════╗\n"
+            << "║            NOMAD-EONS MNIST SNN Evolution (Train/Val)        "
+               "        ║\n"
+            << "╠══════════════════════════════════════════════════════════════"
+               "══════════╣\n"
+            << "║  Population: " << std::setw(4) << population_size
+            << "   Neurons: " << std::setw(3) << total_neurons
+            << "   Synapses: " << std::setw(3) << eu_cfg.num_synapses
+            << "   Seed: " << std::setw(10) << seed << "  ║\n"
+            << "║  Mutation:  " << std::setw(5) << std::fixed
+            << std::setprecision(2) << eu_cfg.mutation_rate
+            << "   Elitism: " << std::setw(3) << eu_cfg.elitism_count
+            << "   Stride: " << train_env_cfg.pixel_stride
+            << "   Inputs: " << std::setw(3) << num_inputs
+            << "              ║\n"
+            << "╠══════════════════════════════════════════════════════════════"
+               "══════════╣\n"
+            << "║ Gen │ Best Fit │ Avg Fit  │ Worst    │ Train Acc │ Val Acc │ "
+               "Top-3?  ║\n"
+            << "╠═════╪══════════╪══════════╪══════════╪═══════════╪═════════╪═"
+               "════════╣\n";
 
   // ── Evolution loop ─────────────────────────────────────────
   for (int gen = 0; gen < num_generations; ++gen) {
@@ -177,48 +193,60 @@ int main(int argc, char *argv[]) {
     }
 
     float avg = sum / static_cast<float>(pop.size());
-    
+
     // Print individual accuracy breakdown for this generation
-    std::cout << "\n┌────────────────────────────────────────────────────────────────────┐\n"
-              << "│  Generation " << std::setw(3) << gen << " / " << std::setw(3) << num_generations << "                                                       │\n"
-              << "├────────┬────────────┬────────────┬────────────┬───────────────────┤\n"
-              << "│ Model  │ Fitness    │ Train Acc  │ Val Acc    │ Status            │\n"
-              << "├────────┼────────────┼────────────┼────────────┼───────────────────┤\n";
-    
+    std::cout << "\n┌──────────────────────────────────────────────────────────"
+                 "──────────┐\n"
+              << "│  Generation " << std::setw(3) << gen << " / "
+              << std::setw(3) << num_generations
+              << "                                                       │\n"
+              << "├────────┬────────────┬────────────┬────────────┬────────────"
+                 "───────┤\n"
+              << "│ Model  │ Fitness    │ Train Acc  │ Val Acc    │ Status     "
+                 "       │\n"
+              << "├────────┼────────────┼────────────┼────────────┼────────────"
+                 "───────┤\n";
+
     float best_train_acc = 0.0f;
     float best_val_acc = 0.0f;
 
     for (int i = 0; i < static_cast<int>(pop.size()); ++i) {
       float m_train_acc = train_env.accuracy(pop[i]);
-      float m_val_acc = compute_val_accuracy(pop[i], val_loader,
-                                             train_count, val_count,
-                                             train_env_cfg);
-      
+      float m_val_acc = compute_val_accuracy(pop[i], val_loader, train_count,
+                                             val_count, train_env_cfg);
+
       std::string status = (i == best_idx) ? "BEST FITNESS" : "";
       if (i < eu_cfg.elitism_count && gen > 0) {
-          if (status.empty()) status = "ELITE";
-          else status += " (ELITE)";
+        if (status.empty())
+          status = "ELITE";
+        else
+          status += " (ELITE)";
       }
 
-      std::cout << "│  " << std::setw(4) << i
-                << "  │  " << std::setw(8) << std::fixed << std::setprecision(3) << pop[i].fitness.to_float()
-                << "  │  " << std::setw(7) << std::setprecision(1) << (m_train_acc * 100.0f) << "%"
-                << "  │  " << std::setw(7) << std::setprecision(1) << (m_val_acc * 100.0f) << "%"
-                << "  │ " << std::setw(17) << std::left << status << std::right << " │\n";
+      std::cout << "│  " << std::setw(4) << i << "  │  " << std::setw(8)
+                << std::fixed << std::setprecision(3)
+                << pop[i].fitness.to_float() << "  │  " << std::setw(7)
+                << std::setprecision(1) << (m_train_acc * 100.0f) << "%"
+                << "  │  " << std::setw(7) << std::setprecision(1)
+                << (m_val_acc * 100.0f) << "%" << "  │ " << std::setw(17)
+                << std::left << status << std::right << " │\n";
     }
 
     // Step 3: Compute training accuracy for the best individual.
     float train_acc = train_env.accuracy(pop[best_idx]);
 
     // Step 4: Compute VALIDATION accuracy for the best individual.
-    float val_acc = compute_val_accuracy(pop[best_idx], val_loader,
-                                          train_count, val_count,
-                                          train_env_cfg);
-                                          
-    std::cout << "├────────┴────────────┴────────────┴────────────┴───────────────────┤\n"
-              << "│  Avg Fit: " << std::setw(7) << std::fixed << std::setprecision(3) << avg 
-              << "   Best Val Acc: " << std::setw(6) << std::setprecision(1) << (val_acc * 100.0f) << "%                             │\n"
-              << "└────────────────────────────────────────────────────────────────────┘\n\n";
+    float val_acc = compute_val_accuracy(pop[best_idx], val_loader, train_count,
+                                         val_count, train_env_cfg);
+
+    std::cout << "├────────┴────────────┴────────────┴────────────┴────────────"
+                 "───────┤\n"
+              << "│  Avg Fit: " << std::setw(7) << std::fixed
+              << std::setprecision(3) << avg
+              << "   Best Val Acc: " << std::setw(6) << std::setprecision(1)
+              << (val_acc * 100.0f) << "%                             │\n"
+              << "└────────────────────────────────────────────────────────────"
+                 "────────┘\n\n";
 
     // Step 5: Track top-3 models by validation accuracy.
     bool is_top3 = false;
@@ -246,13 +274,13 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    std::cout << "║ " << std::setw(3) << gen
-              << " │ " << std::setw(8) << std::fixed << std::setprecision(3) << best_fit.to_float()
-              << " │ " << std::setw(8) << avg
-              << " │ " << std::setw(8) << worst_fit.to_float()
-              << " │ " << std::setw(7) << std::setprecision(1) << (train_acc * 100.0f) << "%"
-              << "  │ " << std::setw(5) << (val_acc * 100.0f) << "%"
-              << " │ " << (is_top3 ? "  ★ " : "    ") << "    ║\n";
+    std::cout << "║ " << std::setw(3) << gen << " │ " << std::setw(8)
+              << std::fixed << std::setprecision(3) << best_fit.to_float()
+              << " │ " << std::setw(8) << avg << " │ " << std::setw(8)
+              << worst_fit.to_float() << " │ " << std::setw(7)
+              << std::setprecision(1) << (train_acc * 100.0f) << "%" << "  │ "
+              << std::setw(5) << (val_acc * 100.0f) << "%" << " │ "
+              << (is_top3 ? "  ★ " : "    ") << "    ║\n";
 
     // Step 6: Trigger evolutionary cycle.
     eu.trigger.write(true);
@@ -272,58 +300,68 @@ int main(int argc, char *argv[]) {
             });
 
   // ── Print results ──────────────────────────────────────────
-  std::cout
-    << "╠════════════════════════════════════════════════════════════════════════╣\n"
-    << "║  Evolution complete: " << num_generations << " generations"
-    << std::string(std::max(0, 48 - static_cast<int>(std::to_string(num_generations).size())), ' ')
-    << "║\n"
-    << "╚════════════════════════════════════════════════════════════════════════╝\n\n";
+  std::cout << "╠══════════════════════════════════════════════════════════════"
+               "══════════╣\n"
+            << "║  Evolution complete: " << num_generations << " generations"
+            << std::string(
+                   std::max(0,
+                            48 - static_cast<int>(
+                                     std::to_string(num_generations).size())),
+                   ' ')
+            << "║\n"
+            << "╚══════════════════════════════════════════════════════════════"
+               "══════════╝\n\n";
 
-  std::cout
-    << "╔════════════════════════════════════════════════════════════════════════╗\n"
-    << "║                     TOP 3 BEST SNN MODELS                           ║\n"
-    << "╠══════╤═══════════╤═════════════╤═════════════╤═════════╤═════════════╣\n"
-    << "║ Rank │ Gen Found │ Train Acc   │ Val Acc     │ Fitness │ Structure   ║\n"
-    << "╠══════╪═══════════╪═════════════╪═════════════╪═════════╪═════════════╣\n";
+  std::cout << "╔══════════════════════════════════════════════════════════════"
+               "══════════╗\n"
+            << "║                     TOP 3 BEST SNN MODELS                    "
+               "       ║\n"
+            << "╠══════╤═══════════╤═════════════╤═════════════╤═════════╤═════"
+               "════════╣\n"
+            << "║ Rank │ Gen Found │ Train Acc   │ Val Acc     │ Fitness │ "
+               "Structure   ║\n"
+            << "╠══════╪═══════════╪═════════════╪═════════════╪═════════╪═════"
+               "════════╣\n";
 
   for (int i = 0; i < static_cast<int>(top3.size()); ++i) {
     const auto &m = top3[i];
-    std::cout << "║  #" << (i + 1) << "  │    "
-              << std::setw(3) << m.generation << "    │   "
-              << std::setw(6) << std::fixed << std::setprecision(2)
-              << (m.train_accuracy * 100.0f) << "%   │   "
-              << std::setw(6) << (m.val_accuracy * 100.0f) << "%   │ "
-              << std::setw(7) << std::setprecision(3) << m.fitness << " │ "
-              << std::setw(3) << m.genotype.neurons.size() << "N "
-              << std::setw(3) << m.genotype.synapses.size() << "S"
-              << "    ║\n";
+    std::cout << "║  #" << (i + 1) << "  │    " << std::setw(3) << m.generation
+              << "    │   " << std::setw(6) << std::fixed
+              << std::setprecision(2) << (m.train_accuracy * 100.0f)
+              << "%   │   " << std::setw(6) << (m.val_accuracy * 100.0f)
+              << "%   │ " << std::setw(7) << std::setprecision(3) << m.fitness
+              << " │ " << std::setw(3) << m.genotype.neurons.size() << "N "
+              << std::setw(3) << m.genotype.synapses.size() << "S" << "    ║\n";
   }
 
-  std::cout
-    << "╚══════╧═══════════╧═════════════╧═════════════╧═════════╧═════════════╝\n\n";
+  std::cout << "╚══════╧═══════════╧═════════════╧═════════════╧═════════╧═════"
+               "════════╝\n\n";
 
   // Print detailed info for each top-3 model.
   for (int i = 0; i < static_cast<int>(top3.size()); ++i) {
     const auto &m = top3[i];
-    std::cout << "── Model #" << (i + 1) << " (Gen " << m.generation << ") ──\n";
+    std::cout << "── Model #" << (i + 1) << " (Gen " << m.generation
+              << ") ──\n";
     std::cout << "  Neurons:          " << m.genotype.neurons.size() << "\n";
     std::cout << "  Synapses:         " << m.genotype.synapses.size() << "\n";
     std::cout << "  Training Acc:     " << std::fixed << std::setprecision(2)
               << (m.train_accuracy * 100.0f) << "%\n";
     std::cout << "  Validation Acc:   " << (m.val_accuracy * 100.0f) << "%\n";
-    std::cout << "  Fitness:          " << std::setprecision(3) << m.fitness << "\n";
+    std::cout << "  Fitness:          " << std::setprecision(3) << m.fitness
+              << "\n";
 
     // Show a few neuron parameters.
     int show_n = std::min(5, static_cast<int>(m.genotype.neurons.size()));
     for (int n = 0; n < show_n; ++n) {
       const auto &np = m.genotype.neurons[n];
-      std::cout << "  Neuron[" << n << "]: threshold="
-                << std::setprecision(3) << np.threshold.to_float()
+      std::cout << "  Neuron[" << n << "]: threshold=" << std::setprecision(3)
+                << np.threshold.to_float()
                 << " leak=" << np.leak_rate.to_float()
                 << " refrac=" << (int)np.refractory_period << "\n";
     }
     if (static_cast<int>(m.genotype.neurons.size()) > 5) {
-      std::cout << "  ... (" << (m.genotype.neurons.size() - 5) << " more neurons)\n";
+      std::cout << "  ... (" << (m.genotype.neurons.size() - 5)
+                << " more neurons)\n";
     }
     std::cout << "\n";
   }
@@ -337,8 +375,8 @@ int main(int argc, char *argv[]) {
 /// This evaluates the genotype on the validation portion of the data,
 /// which starts at index `offset` in the loader.
 float compute_val_accuracy(const Genotype &genotype, const MNISTLoader &loader,
-                            int offset, int count,
-                            const MNISTEnvironment::Config &cfg) {
+                           int offset, int count,
+                           const MNISTEnvironment::Config &cfg) {
   int num_neurons = static_cast<int>(genotype.neurons.size());
   int num_inputs = cfg.num_input_neurons();
   int num_outputs = cfg.num_output_neurons;
@@ -353,7 +391,8 @@ float compute_val_accuracy(const Genotype &genotype, const MNISTLoader &loader,
   if (offset + count > loader.size()) {
     count = loader.size() - offset;
   }
-  if (count <= 0) return 0.0f;
+  if (count <= 0)
+    return 0.0f;
 
   // Pre-compute downsampled pixel indices.
   std::vector<int> pixel_indices;
@@ -372,14 +411,17 @@ float compute_val_accuracy(const Genotype &genotype, const MNISTLoader &loader,
     std::vector<std::unique_ptr<NeuronLIF>> neurons;
     neurons.reserve(num_neurons);
     for (int i = 0; i < num_neurons; ++i) {
-      auto neuron = std::make_unique<NeuronLIF>(
-          "vn" + std::to_string(i), genotype.neurons[i]);
+      auto neuron = std::make_unique<NeuronLIF>("vn" + std::to_string(i),
+                                                genotype.neurons[i]);
       neuron->initialize();
       neurons.push_back(std::move(neuron));
     }
 
     // Build synapse table.
-    struct SynEntry { int dst; fp16_8 weight; };
+    struct SynEntry {
+      int dst;
+      fp16_8 weight;
+    };
     std::vector<std::vector<SynEntry>> syn_table(num_neurons);
     for (const auto &syn : genotype.synapses) {
       int src = syn.src_neuron % num_neurons;
@@ -389,8 +431,8 @@ float compute_val_accuracy(const Genotype &genotype, const MNISTLoader &loader,
 
     // Simulate.
     for (int cycle = 0; cycle < cfg.cycles_per_sample; ++cycle) {
-      for (int i = 0; i < num_inputs &&
-                       i < static_cast<int>(pixel_indices.size()); ++i) {
+      for (int i = 0;
+           i < num_inputs && i < static_cast<int>(pixel_indices.size()); ++i) {
         uint8_t pixel = sample.pixels[pixel_indices[i]];
         if (pixel > 0) {
           float intensity = static_cast<float>(pixel) / 255.0f;
@@ -400,8 +442,12 @@ float compute_val_accuracy(const Genotype &genotype, const MNISTLoader &loader,
         }
       }
 
-      for (auto &n : neurons) { n->clk.write(true); }
-      for (auto &n : neurons) { n->clk.write(false); }
+      for (auto &n : neurons) {
+        n->clk.write(true);
+      }
+      for (auto &n : neurons) {
+        n->clk.write(false);
+      }
 
       for (int i = 0; i < num_neurons; ++i) {
         if (neurons[i]->fired.read()) {
