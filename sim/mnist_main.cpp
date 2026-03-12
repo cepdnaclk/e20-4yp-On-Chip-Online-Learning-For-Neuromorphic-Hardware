@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
 
   // ── Evolution Unit config ──────────────────────────────────
   int num_inputs = train_env_cfg.num_input_neurons(); // 49
-  int num_hidden = 10;
+  int num_hidden = 141; // Adjusted for 200 total neurons
   int num_outputs = 10; // digits 0-9
   int total_neurons = num_inputs + num_hidden + num_outputs;
 
