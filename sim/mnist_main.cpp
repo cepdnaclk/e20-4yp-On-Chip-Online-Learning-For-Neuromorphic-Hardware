@@ -177,19 +177,48 @@ int main(int argc, char *argv[]) {
     }
 
     float avg = sum / static_cast<float>(pop.size());
+    
+    // Print individual accuracy breakdown for this generation
+    std::cout << "\n┌────────────────────────────────────────────────────────────────────┐\n"
+              << "│  Generation " << std::setw(3) << gen << " / " << std::setw(3) << num_generations << "                                                       │\n"
+              << "├────────┬────────────┬────────────┬────────────┬───────────────────┤\n"
+              << "│ Model  │ Fitness    │ Train Acc  │ Val Acc    │ Status            │\n"
+              << "├────────┼────────────┼────────────┼────────────┼───────────────────┤\n";
+    
+    float best_train_acc = 0.0f;
+    float best_val_acc = 0.0f;
+
+    for (int i = 0; i < static_cast<int>(pop.size()); ++i) {
+      float m_train_acc = train_env.accuracy(pop[i]);
+      float m_val_acc = compute_val_accuracy(pop[i], val_loader,
+                                             train_count, val_count,
+                                             train_env_cfg);
+      
+      std::string status = (i == best_idx) ? "BEST FITNESS" : "";
+      if (i < eu_cfg.elitism_count && gen > 0) {
+          if (status.empty()) status = "ELITE";
+          else status += " (ELITE)";
+      }
+
+      std::cout << "│  " << std::setw(4) << i
+                << "  │  " << std::setw(8) << std::fixed << std::setprecision(3) << pop[i].fitness.to_float()
+                << "  │  " << std::setw(7) << std::setprecision(1) << (m_train_acc * 100.0f) << "%"
+                << "  │  " << std::setw(7) << std::setprecision(1) << (m_val_acc * 100.0f) << "%"
+                << "  │ " << std::setw(17) << std::left << status << std::right << " │\n";
+    }
 
     // Step 3: Compute training accuracy for the best individual.
     float train_acc = train_env.accuracy(pop[best_idx]);
 
     // Step 4: Compute VALIDATION accuracy for the best individual.
-    // Use samples starting from train_count offset (the 20% validation set).
-    // We evaluate the genotype on the full val_loader but we need to
-    // use the validation portion. Since MNISTEnvironment evaluates from
-    // index 0, and val_loader has all data, we create an accuracy
-    // computation manually for the validation portion.
     float val_acc = compute_val_accuracy(pop[best_idx], val_loader,
                                           train_count, val_count,
                                           train_env_cfg);
+                                          
+    std::cout << "├────────┴────────────┴────────────┴────────────┴───────────────────┤\n"
+              << "│  Avg Fit: " << std::setw(7) << std::fixed << std::setprecision(3) << avg 
+              << "   Best Val Acc: " << std::setw(6) << std::setprecision(1) << (val_acc * 100.0f) << "%                             │\n"
+              << "└────────────────────────────────────────────────────────────────────┘\n\n";
 
     // Step 5: Track top-3 models by validation accuracy.
     bool is_top3 = false;
