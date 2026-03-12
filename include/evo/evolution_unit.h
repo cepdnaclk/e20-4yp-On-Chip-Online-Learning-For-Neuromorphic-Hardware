@@ -261,21 +261,36 @@ private:
             mutator_.mutate(offspring_[i], prng_);
         }
 
-        // Elitism: copy best individuals directly.
-        // Sort population by fitness (descending) and keep top elitism_count.
+        // Elitism: Top 3 by accuracy, remainder by fitness
         if (config_.elitism_count > 0) {
             // Find indices of top-k fittest individuals.
             std::vector<int> indices(population_.size());
             for (size_t i = 0; i < indices.size(); ++i) indices[i] = static_cast<int>(i);
 
-            // Partial sort to get top elitism_count.
-            for (int e = 0; e < config_.elitism_count && e < static_cast<int>(population_.size()); ++e) {
+            int acc_elites = std::min(3, config_.elitism_count);
+            int fit_elites = config_.elitism_count - acc_elites;
+
+            // Pick top `acc_elites` by val_accuracy
+            for (int e = 0; e < acc_elites && e < static_cast<int>(population_.size()); ++e) {
                 for (size_t j = e + 1; j < indices.size(); ++j) {
-                    if (population_[indices[j]].fitness > population_[indices[e]].fitness) {
+                    if (population_[indices[j]].val_accuracy > population_[indices[e]].val_accuracy) {
                         std::swap(indices[e], indices[j]);
                     }
                 }
                 offspring_[num_offspring + e] = population_[indices[e]];
+            }
+
+            // Pick next `fit_elites` by fitness from the remaining individuals
+            for (int e = 0; e < fit_elites; ++e) {
+                int base = acc_elites + e;
+                if (base >= static_cast<int>(population_.size())) break;
+                
+                for (size_t j = base + 1; j < indices.size(); ++j) {
+                    if (population_[indices[j]].fitness > population_[indices[base]].fitness) {
+                        std::swap(indices[base], indices[j]);
+                    }
+                }
+                offspring_[num_offspring + base] = population_[indices[base]];
             }
         }
 

@@ -33,14 +33,17 @@ struct Genotype {
     /// Fitness score for this individual (higher = better).
     fp16_8 fitness;
 
+    /// Validation accuracy (0.0 to 1.0) used for elitism ranking.
+    float val_accuracy;
+
     // ── Construction ─────────────────────────────────────────
 
-    Genotype() : fitness(fp16_8::zero()) {}
+    Genotype() : fitness(fp16_8::zero()), val_accuracy(0.0f) {}
 
     /// Create a genotype with the given number of neurons and synapses.
     Genotype(int num_neurons, int num_synapses)
         : neurons(num_neurons), synapses(num_synapses),
-          fitness(fp16_8::zero()) {}
+          fitness(fp16_8::zero()), val_accuracy(0.0f) {}
 
     // ── Gene count ───────────────────────────────────────────
 
@@ -66,14 +69,63 @@ struct Genotype {
             np.neuron_id = static_cast<uint8_t>(prng.next_int(16));
         }
 
+        // To ensure the network isn't physically disconnected, we do layered wiring.
+        // Assuming typical MNIST config: inputs are first block, outputs are last 10.
+        // If not enough neurons, fall back to random wiring.
+        int num_n = static_cast<int>(neurons.size());
+        int num_inputs = 49; 
+        int num_outputs = 10;
+        
+        if (num_n >= num_inputs + num_outputs) {
+            int hidden_start = num_inputs;
+            int hidden_end = num_n - num_outputs;
+            int num_hidden = hidden_end - hidden_start;
+            
+            int s = 0;
+            // Strategy: 
+            // 1. Connect every input to at least 1 hidden (or output if no hidden)
+            // 2. Connect every hidden to at least 1 output (or another hidden)
+            // 3. Connect remaining synapses randomly but biased forward
+            
+            // If no hidden layer, strict bipartite
+            int target_start = (num_hidden > 0) ? hidden_start : hidden_end;
+            int target_size = (num_hidden > 0) ? num_hidden : num_outputs;
+            
+            for (int i = 0; i < num_inputs && s < static_cast<int>(synapses.size()); ++i) {
+                synapses[s].src_neuron = i;
+                synapses[s].dst_neuron = target_start + prng.next_int(target_size);
+                s++;
+            }
+            
+            if (num_hidden > 0) {
+                for (int i = hidden_start; i < hidden_end && s < static_cast<int>(synapses.size()); ++i) {
+                    synapses[s].src_neuron = i;
+                    synapses[s].dst_neuron = hidden_end + prng.next_int(num_outputs);
+                    s++;
+                }
+            }
+            
+            // Randomize the rest
+            while (s < static_cast<int>(synapses.size())) {
+                synapses[s].src_neuron = static_cast<uint8_t>(prng.next_int(num_n));
+                synapses[s].dst_neuron = static_cast<uint8_t>(prng.next_int(num_n));
+                s++;
+            }
+        } else {
+             for (size_t s = 0; s < synapses.size(); ++s) {
+                synapses[s].src_neuron = static_cast<uint8_t>(prng.next_int(num_n));
+                synapses[s].dst_neuron = static_cast<uint8_t>(prng.next_int(num_n));
+             }
+        }
+
+        // Apply metadata and weights
         for (auto& syn : synapses) {
-            syn.src_neuron = static_cast<uint8_t>(prng.next_int(static_cast<uint32_t>(neurons.size())));
-            syn.dst_neuron = static_cast<uint8_t>(prng.next_int(static_cast<uint32_t>(neurons.size())));
             syn.src_x = static_cast<uint8_t>(prng.next_int(mesh_w));
             syn.src_y = static_cast<uint8_t>(prng.next_int(mesh_h));
             syn.dst_x = static_cast<uint8_t>(prng.next_int(mesh_w));
             syn.dst_y = static_cast<uint8_t>(prng.next_int(mesh_h));
-            syn.weight = prng.next_fixed();
+            // Thresholds are generated in [0.5, 2.0]. To ensure firing, weights need larger spread.
+            syn.weight = fp16_8::from_float((prng.next_float() - 0.5f) * 6.0f); // Range [-3.0, 3.0]
             syn.delay  = static_cast<uint8_t>(1 + prng.next_int(4));
         }
     }

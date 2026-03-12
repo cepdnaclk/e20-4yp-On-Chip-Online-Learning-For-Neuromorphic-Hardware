@@ -185,14 +185,14 @@ public:
       int expected = static_cast<int>(sample.label);
 
       if (predicted == expected) {
-        // Correct classification: +1.0 fitness.
-        total_fitness = total_fitness + fp16_8::from_float(1.0f);
+        // Correct classification: +10.0 fitness (huge reward for accuracy).
+        total_fitness = total_fitness + fp16_8::from_float(10.0f);
         correct_count++;
 
         // Confidence bonus: more spikes on the correct class is better.
-        if (max_spikes > 1) {
-          total_fitness = total_fitness + fp16_8::from_float(0.1f);
-        }
+        float confidence = static_cast<float>(max_spikes) / 10.0f;
+        if (confidence > 5.0f) confidence = 5.0f;
+        total_fitness = total_fitness + fp16_8::from_float(confidence);
       } else if (predicted >= 0) {
         // Wrong classification but the network is active.
         // Partial credit: if the correct output neuron fired at all.
@@ -201,11 +201,22 @@ public:
           // Partial credit for having some activity on the correct output.
           float ratio = static_cast<float>(correct_spikes) /
                         static_cast<float>(max_spikes + 1);
-          if (ratio > 0.5f) ratio = 0.5f;
+          if (ratio > 0.8f) ratio = 0.8f;
           total_fitness = total_fitness + fp16_8::from_float(ratio);
+          
+          // Small penalty for the wrongly predicted class's spikes
+          total_fitness = total_fitness - fp16_8::from_float(0.1f);
         }
       }
-      // If predicted == -1 (no output spikes at all), no fitness awarded.
+      // If predicted == -1 (no output spikes at all), apply a small penalty.
+      if (predicted == -1) {
+          total_fitness = total_fitness - fp16_8::from_float(0.1f);
+      }
+    }
+    
+    // Prevent negative fitness
+    if (total_fitness < fp16_8::zero()) {
+        total_fitness = fp16_8::zero();
     }
 
     return total_fitness;

@@ -17,6 +17,7 @@
 #include "evo/genotype.h"
 #include "memory/memory_cluster.h"
 #include "noc/noc_mesh.h"
+#include <fstream>
 #include <algorithm>
 #include <cstdlib>
 #include <iomanip>
@@ -68,7 +69,7 @@ int main(int argc, char *argv[]) {
 
   if (num_generations <= 0) num_generations = 30;
   if (population_size < 4) population_size = 4;
-  if (target_neurons < 59) target_neurons = 59; // Minimum required for 49 inputs + 10 outputs
+  if (target_neurons < 794) target_neurons = 794; // Minimum required for 784 inputs + 10 outputs
   if (target_synapses <= 0) target_synapses = 200;
   if (mutation_rate < 0.0f || mutation_rate > 1.0f) mutation_rate = 0.08f;
 
@@ -103,15 +104,15 @@ int main(int argc, char *argv[]) {
   // ── Environment configs ────────────────────────────────────
   MNISTEnvironment::Config train_env_cfg;
   train_env_cfg.pixel_stride = 4; // 7x7 = 49 input neurons
-  train_env_cfg.cycles_per_sample = 30;
+  train_env_cfg.cycles_per_sample = 50;
   train_env_cfg.num_eval_samples =
-      200; // Evaluate on 200 training samples per genotype
+      1000; // Evaluate on 1000 training samples per genotype
 
   MNISTEnvironment::Config val_env_cfg;
   val_env_cfg.pixel_stride = 4;
-  val_env_cfg.cycles_per_sample = 30;
+  val_env_cfg.cycles_per_sample = 50;
   val_env_cfg.num_eval_samples =
-      val_count; // Evaluate on ALL validation samples
+      500; // Evaluate on 500 validation samples
 
   // Create training and validation environments
   MNISTEnvironment train_env(train_env_cfg, train_loader);
@@ -119,16 +120,16 @@ int main(int argc, char *argv[]) {
 
   // ── Evolution Unit config ──────────────────────────────────
   int num_inputs = train_env_cfg.num_input_neurons(); // 49
-  int num_hidden = target_neurons - num_inputs - 10; // Adjusted for target_neurons total neurons
+  int num_hidden = 141; // Adjusted for 200 total neurons
   int num_outputs = 10; // digits 0-9
-  int total_neurons = num_inputs + num_hidden + num_outputs; // Should equal target_neurons
+  int total_neurons = num_inputs + num_hidden + num_outputs; // 200
 
   EvolutionUnit::Config eu_cfg;
   eu_cfg.population_size = population_size;
   eu_cfg.num_neurons = total_neurons;
   eu_cfg.num_synapses = target_synapses;
   eu_cfg.mutation_rate = mutation_rate;
-  eu_cfg.elitism_count = 3;
+  eu_cfg.elitism_count = 5;
   eu_cfg.mesh_width = 3;
   eu_cfg.mesh_height = 3;
   eu_cfg.eval_cycles = 100;
@@ -169,128 +170,202 @@ int main(int argc, char *argv[]) {
             << "╠═════╪══════════╪══════════╪══════════╪═══════════╪═════════╪═"
                "════════╣\n";
 
-  // ── Evolution loop ─────────────────────────────────────────
-  for (int gen = 0; gen < num_generations; ++gen) {
-    // Step 1: Evaluate all individuals on TRAINING set.
-    train_env.evaluate_population(eu.population());
+  int target_accuracy = 60; // Stop when accuracy >= 60%
+  int max_iterations = 50;  // Failsafe limit
+  
+  // ── Multi-Iteration Evolution Loop ─────────────────────────────
+  for (int iter = 0; iter < max_iterations; ++iter) {
+    std::cout << "\n================================================================================\n"
+              << "                         ITERATION " << iter + 1 << " STARTING\n"
+              << "================================================================================\n";
 
-    // Step 2: Collect fitness statistics.
-    auto &pop = eu.population();
-    fp16_8 best_fit = pop[0].fitness;
-    fp16_8 worst_fit = pop[0].fitness;
-    float sum = 0.0f;
-    int best_idx = 0;
+    // Re-initialize hardware modules to clean states
+    noc.initialize();
+    mem.initialize();
+    eu.initialize();
 
-    for (int i = 0; i < static_cast<int>(pop.size()); ++i) {
-      if (pop[i].fitness > best_fit) {
-        best_fit = pop[i].fitness;
-        best_idx = i;
+    // If this is not the first iteration, inject variants of previous top-3 models
+    if (iter > 0 && top3.size() >= 3) {
+      auto& pop = eu.population();
+      PRNG iter_rng(seed + iter);
+      Mutator mut(eu_cfg.mutation_rate);
+
+      // Copy the best 3 models directly into the first 3 slots
+      pop[0] = top3[0].genotype;
+      pop[1] = top3[1].genotype;
+      pop[2] = top3[2].genotype;
+
+      // Fill the rest with mutated variants
+      for (int i = 3; i < population_size; ++i) {
+        // Pick one of the top 3 randomly
+        int parent_idx = iter_rng.next_int(3);
+        pop[i] = top3[parent_idx].genotype;
+        mut.mutate(pop[i], iter_rng);
       }
-      if (pop[i].fitness < worst_fit) {
-        worst_fit = pop[i].fitness;
-      }
-      sum += pop[i].fitness.to_float();
+      std::cout << "[Tuning Engine] Seeded population from iteration " << iter << " top models.\n\n";
     }
+      
+    // Reset top3 for this iteration (or keep accumulating? Accumulating might be better)
+    // We will accumulate, so the very top 3 observed across all iterations are kept.
 
-    float avg = sum / static_cast<float>(pop.size());
+    // ── Evolution loop (Runs for `num_generations`) ──────────────
+    for (int gen = 0; gen < num_generations; ++gen) {
+      // Step 1: Evaluate all individuals on TRAINING set.
+      train_env.evaluate_population(eu.population());
 
-    // Print individual accuracy breakdown for this generation
-    std::cout << "\n┌──────────────────────────────────────────────────────────"
-                 "──────────┐\n"
-              << "│  Generation " << std::setw(3) << gen << " / "
-              << std::setw(3) << num_generations
-              << "                                                       │\n"
-              << "├────────┬────────────┬────────────┬────────────┬────────────"
-                 "───────┤\n"
-              << "│ Model  │ Fitness    │ Train Acc  │ Val Acc    │ Status     "
-                 "       │\n"
-              << "├────────┼────────────┼────────────┼────────────┼────────────"
-                 "───────┤\n";
+      // Step 2: Collect fitness statistics.
+      auto &pop = eu.population();
+      fp16_8 best_fit = pop[0].fitness;
+      fp16_8 worst_fit = pop[0].fitness;
+      float sum = 0.0f;
+      int best_idx = 0;
 
-    float best_train_acc = 0.0f;
-    float best_val_acc = 0.0f;
-
-    for (int i = 0; i < static_cast<int>(pop.size()); ++i) {
-      float m_train_acc = train_env.accuracy(pop[i]);
-      float m_val_acc = compute_val_accuracy(pop[i], val_loader, train_count,
-                                             val_count, train_env_cfg);
-
-      std::string status = (i == best_idx) ? "BEST FITNESS" : "";
-      if (i < eu_cfg.elitism_count && gen > 0) {
-        if (status.empty())
-          status = "ELITE";
-        else
-          status += " (ELITE)";
+      for (int i = 0; i < static_cast<int>(pop.size()); ++i) {
+        if (pop[i].fitness > best_fit) {
+          best_fit = pop[i].fitness;
+          best_idx = i;
+        }
+        if (pop[i].fitness < worst_fit) {
+          worst_fit = pop[i].fitness;
+        }
+        sum += pop[i].fitness.to_float();
       }
 
-      std::cout << "│  " << std::setw(4) << i << "  │  " << std::setw(8)
-                << std::fixed << std::setprecision(3)
-                << pop[i].fitness.to_float() << "  │  " << std::setw(7)
-                << std::setprecision(1) << (m_train_acc * 100.0f) << "%"
-                << "  │  " << std::setw(7) << std::setprecision(1)
-                << (m_val_acc * 100.0f) << "%" << "  │ " << std::setw(17)
-                << std::left << status << std::right << " │\n";
-    }
+      float avg = sum / static_cast<float>(pop.size());
 
-    // Step 3: Compute training accuracy for the best individual.
-    float train_acc = train_env.accuracy(pop[best_idx]);
+      // Step 3: Compute training accuracy for the best individual.
+      float train_acc = train_env.accuracy(pop[best_idx]);
 
-    // Step 4: Compute VALIDATION accuracy for the best individual.
-    float val_acc = compute_val_accuracy(pop[best_idx], val_loader, train_count,
-                                         val_count, train_env_cfg);
+      // Step 4: Compute VALIDATION accuracy for the best individual.
+      float val_acc = compute_val_accuracy(pop[best_idx], val_loader, train_count,
+                                           val_count, train_env_cfg);
 
-    std::cout << "├────────┴────────────┴────────────┴────────────┴────────────"
-                 "───────┤\n"
-              << "│  Avg Fit: " << std::setw(7) << std::fixed
-              << std::setprecision(3) << avg
-              << "   Best Val Acc: " << std::setw(6) << std::setprecision(1)
-              << (val_acc * 100.0f) << "%                             │\n"
-              << "└────────────────────────────────────────────────────────────"
-                 "────────┘\n\n";
+      // Print individual accuracy breakdown for this generation
+      std::cout << "\n┌────────────────────────────────────────────────────────────"
+                   "──────┐\n"
+                << "│  Iter " << std::setw(2) << iter + 1 << " │ Gen " << std::setw(3) << gen << " / "
+                << std::setw(3) << num_generations
+                << "                                          │\n"
+                << "├────────┬────────────┬────────────┬────────────┬────────────"
+                   "───────┤\n"
+                << "│ Model  │ Fitness    │ Train Acc  │ Val Acc    │ Status     "
+                   "       │\n"
+                << "├────────┼────────────┼────────────┼────────────┼────────────"
+                   "───────┤\n";
 
-    // Step 5: Track top-3 models by validation accuracy.
-    bool is_top3 = false;
-    ModelRecord rec;
-    rec.genotype = pop[best_idx];
-    rec.train_accuracy = train_acc;
-    rec.val_accuracy = val_acc;
-    rec.generation = gen;
-    rec.fitness = best_fit.to_float();
+      for (int i = 0; i < static_cast<int>(pop.size()); ++i) {
+        float m_train_acc = train_env.accuracy(pop[i]);
+        float m_val_acc = compute_val_accuracy(pop[i], val_loader, train_count,
+                                               val_count, train_env_cfg);
 
-    if (static_cast<int>(top3.size()) < 3) {
-      top3.push_back(rec);
-      is_top3 = true;
-    } else {
-      // Find the worst in top3.
-      int worst_idx_t3 = 0;
-      for (int i = 1; i < 3; ++i) {
-        if (top3[i].val_accuracy < top3[worst_idx_t3].val_accuracy) {
-          worst_idx_t3 = i;
+        pop[i].val_accuracy = m_val_acc;
+
+        std::string status = (i == best_idx) ? "BEST FITNESS" : "";
+        if (i < eu_cfg.elitism_count && gen > 0) {
+          if (status.empty())
+            status = "ELITE";
+          else
+            status += " (ELITE)";
+        }
+
+        std::cout << "│  " << std::setw(4) << i << "  │  " << std::setw(8)
+                  << std::fixed << std::setprecision(3)
+                  << pop[i].fitness.to_float() << "  │  " << std::setw(7)
+                  << std::setprecision(1) << (m_train_acc * 100.0f) << "%"
+                  << "  │  " << std::setw(7) << std::setprecision(1)
+                  << (m_val_acc * 100.0f) << "%" << "  │ " << std::setw(17)
+                  << std::left << status << std::right << " │\n";
+      }
+
+      std::cout << "├────────┴────────────┴────────────┴────────────┴────────────"
+                   "───────┤\n"
+                << "│  Avg Fit: " << std::setw(7) << std::fixed
+                << std::setprecision(3) << avg
+                << "   Best Val Acc: " << std::setw(6) << std::setprecision(1)
+                << (val_acc * 100.0f) << "%                             │\n"
+                << "└────────────────────────────────────────────────────────────"
+                   "────────┘\n\n";
+
+      // Step 5: Track top-3 models by validation accuracy.
+      bool is_top3 = false;
+      ModelRecord rec;
+      rec.genotype = pop[best_idx];
+      rec.train_accuracy = train_acc;
+      rec.val_accuracy = val_acc;
+      rec.generation = (iter * num_generations) + gen;
+      rec.fitness = best_fit.to_float();
+
+      if (static_cast<int>(top3.size()) < 3) {
+        top3.push_back(rec);
+        is_top3 = true;
+      } else {
+        // Find the worst in top3.
+        int worst_idx_t3 = 0;
+        for (int i = 1; i < 3; ++i) {
+          if (top3[i].val_accuracy < top3[worst_idx_t3].val_accuracy) {
+            worst_idx_t3 = i;
+          }
+        }
+        if (val_acc > top3[worst_idx_t3].val_accuracy) {
+          top3[worst_idx_t3] = rec;
+          is_top3 = true;
         }
       }
-      if (val_acc > top3[worst_idx_t3].val_accuracy) {
-        top3[worst_idx_t3] = rec;
-        is_top3 = true;
-      }
+
+      std::cout << "║ " << std::setw(3) << gen << " │ " << std::setw(8)
+                << std::fixed << std::setprecision(3) << best_fit.to_float()
+                << " │ " << std::setw(8) << avg << " │ " << std::setw(8)
+                << worst_fit.to_float() << " │ " << std::setw(7)
+                << std::setprecision(1) << (train_acc * 100.0f) << "%" << "  │ "
+                << std::setw(5) << (val_acc * 100.0f) << "%" << " │ "
+                << (is_top3 ? "  ★ " : "    ") << "    ║\n";
+
+      // Step 6: Trigger evolutionary cycle.
+      eu.trigger.write(true);
+      int safety = 0;
+      do {
+        eu.clk.write(true);
+        eu.clk.write(false);
+        safety++;
+      } while (eu.state() != EUState::IDLE && safety < 100);
+      eu.trigger.write(false);
     }
+    
+    // Check stopping condition at end of iteration
+    bool target_reached = false;
+    float current_best_val = 0.0f;
+    for (const auto& m : top3) {
+        if (m.val_accuracy * 100.0f >= target_accuracy) target_reached = true;
+        if (m.val_accuracy > current_best_val) current_best_val = m.val_accuracy;
+    }
+    
+    std::cout << "Iteration " << iter + 1 << " End >> Best Val Acc: " << (current_best_val * 100.0f) << "%\n";
 
-    std::cout << "║ " << std::setw(3) << gen << " │ " << std::setw(8)
-              << std::fixed << std::setprecision(3) << best_fit.to_float()
-              << " │ " << std::setw(8) << avg << " │ " << std::setw(8)
-              << worst_fit.to_float() << " │ " << std::setw(7)
-              << std::setprecision(1) << (train_acc * 100.0f) << "%" << "  │ "
-              << std::setw(5) << (val_acc * 100.0f) << "%" << " │ "
-              << (is_top3 ? "  ★ " : "    ") << "    ║\n";
-
-    // Step 6: Trigger evolutionary cycle.
-    eu.trigger.write(true);
-    int safety = 0;
-    do {
-      eu.clk.write(true);
-      eu.clk.write(false);
-      safety++;
-    } while (eu.state() != EUState::IDLE && safety < 100);
-    eu.trigger.write(false);
+    if (!top3.empty()) {
+        std::ofstream csv_file("best_models.csv", std::ios::app);
+        csv_file.seekp(0, std::ios::end);
+        if (csv_file.tellp() == 0) {
+            csv_file << "Iteration,Val_Accuracy,Train_Accuracy,Fitness,Neurons,Synapses,Genotype_Bits\n";
+        }
+        const auto& best_model = top3[0];
+        csv_file << (iter + 1) << ","
+                 << best_model.val_accuracy << ","
+                 << best_model.train_accuracy << ","
+                 << best_model.fitness << ","
+                 << best_model.genotype.neurons.size() << ","
+                 << best_model.genotype.synapses.size() << ",";
+                 
+        auto bits = best_model.genotype.to_bitstream();
+        for (size_t i = 0; i < bits.size(); ++i) {
+            csv_file << bits[i];
+        }
+        csv_file << "\n";
+    }
+    
+    if (target_reached) {
+        std::cout << "\n>>> TARGET ACCURACY REACHED! Stopping Multi-Iteration Engine. <<<\n\n";
+        break;
+    }
   }
 
   // ── Sort top-3 by validation accuracy ──────────────────────
