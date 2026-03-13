@@ -79,6 +79,12 @@ test_weight_update_logic: dir
 		$(TB_DIR)/tb_weight_update_logic.v
 	$(VVP) $(BUILD_DIR)/tb_weight_update_logic.vvp
 
+test_weight_distribution_receiver: dir
+	$(IVERILOG) -o $(BUILD_DIR)/tb_weight_distribution_receiver.vvp \
+		$(RTL_DIR)/weight_distribution_receiver.v \
+		$(TB_DIR)/tb_weight_distribution_receiver.v
+	$(VVP) $(BUILD_DIR)/tb_weight_distribution_receiver.vvp
+
 test_spike_input_queue: dir
 	$(IVERILOG) -o $(BUILD_DIR)/tb_spike_input_queue.vvp \
 		$(RTL_DIR)/spike_input_queue.v \

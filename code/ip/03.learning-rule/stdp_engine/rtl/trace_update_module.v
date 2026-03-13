@@ -90,7 +90,7 @@ module trace_update_module #(
 
     // Corrected value with saturation
     wire [TRACE_VALUE_BIT_WIDTH:0] corrected_extended;
-    assign corrected_extended = {1'b0, shifted_trace_value} + {TRACE_VALUE_BIT_WIDTH{1'b0}, correction_bit};
+    assign corrected_extended = {1'b0, shifted_trace_value} + {{TRACE_VALUE_BIT_WIDTH{1'b0}}, correction_bit};
 
     wire [TRACE_VALUE_BIT_WIDTH-1:0] corrected_trace_value;
     assign corrected_trace_value = (corrected_extended > {1'b0, {TRACE_VALUE_BIT_WIDTH{1'b1}}}) ?

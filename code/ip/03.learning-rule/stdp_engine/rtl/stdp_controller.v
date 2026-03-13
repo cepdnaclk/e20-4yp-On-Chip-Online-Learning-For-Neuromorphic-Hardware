@@ -105,9 +105,9 @@ module stdp_controller #(
     reg [NEURON_ADDRESS_WIDTH-1:0]                  registered_fired_neuron_address_register;
     reg [NUM_NEURONS_PER_CLUSTER-1:0]               registered_input_connection_vector_register;
     reg [NUM_NEURONS_PER_CLUSTER-1:0]               registered_output_connection_vector_register;
-    reg [NEURON_ADDRESS_WIDTH-1:0]                  column_step_counter_register;
+    reg [NEURON_ADDRESS_WIDTH:0]                    column_step_counter_register; // +1 bit to reach NUM_NEURONS_PER_CLUSTER
     reg [NEURON_ADDRESS_WIDTH-1:0]                  pre_trace_request_pointer_register;
-    localparam COUNT_WIDTH = $clog2(NUM_NEURONS_PER_CLUSTER + 2);
+    localparam COUNT_WIDTH = NEURON_ADDRESS_WIDTH + 1; // enough to hold 0..NUM_NEURONS_PER_CLUSTER
     reg [COUNT_WIDTH-1:0]                           pending_trace_result_count_register;
     reg [COUNT_WIDTH-1:0]                           received_trace_result_count_register;
     reg [TRACE_VALUE_BIT_WIDTH-1:0]                 pre_synaptic_trace_result_store_register [0:NUM_NEURONS_PER_CLUSTER-1];
@@ -128,15 +128,9 @@ module stdp_controller #(
     reg                                             pre_trace_read_pending_register;
     reg [NEURON_ADDRESS_WIDTH-1:0]                  pre_trace_current_neuron_register;
 
-    // Popcount of input connection vector
+    // Popcount of input connection vector (computed as a registered value)
     integer pc_idx;
-    reg [COUNT_WIDTH-1:0] input_vector_popcount;
-    always @(*) begin
-        input_vector_popcount = 0;
-        for (pc_idx = 0; pc_idx < NUM_NEURONS_PER_CLUSTER; pc_idx = pc_idx + 1) begin
-            input_vector_popcount = input_vector_popcount + registered_input_connection_vector_register[pc_idx];
-        end
-    end
+    reg [COUNT_WIDTH-1:0] input_vector_popcount_register;
 
     // Find next set bit in input connection vector from current pointer
     integer nxt_idx;
@@ -236,10 +230,12 @@ module stdp_controller #(
                 row_read_data_captured_flag_register     <= 1'b1;
             end
 
-            // ---- Always handle arbiter results (any state after dispatch) ----
+            // ---- Always handle arbiter results (any non-IDLE state) ----
+            // The INCREASE request is issued in READ_CONNECTION_MATRIX, and
+            // with 2-cycle trace module latency the result can arrive in
+            // that same state or later. We must accept it immediately.
             if (arbiter_result_valid &&
-                state_register != STDP_CTRL_IDLE &&
-                state_register != STDP_CTRL_READ_CONNECTION_MATRIX) begin
+                state_register != STDP_CTRL_IDLE) begin
                 if (arbiter_result_operation_type == 1'b0) begin
                     // INCREASE result (post-synaptic trace)
                     post_synaptic_trace_result_register <= arbiter_result_trace_value;
@@ -335,8 +331,13 @@ module stdp_controller #(
                 // BEGIN_PARALLEL_PHASE
                 // =============================================================
                 STDP_CTRL_BEGIN_PARALLEL_PHASE: begin
+                    // Compute popcount of input vector in registered logic
+                    input_vector_popcount_register = {COUNT_WIDTH{1'b0}};
+                    for (pc_idx = 0; pc_idx < NUM_NEURONS_PER_CLUSTER; pc_idx = pc_idx + 1) begin
+                        input_vector_popcount_register = input_vector_popcount_register + {{(COUNT_WIDTH-1){1'b0}}, registered_input_connection_vector_register[pc_idx]};
+                    end
                     // Set pending count = popcount(input_vector) + 1 (for post-synaptic INCREASE)
-                    pending_trace_result_count_register <= input_vector_popcount + 1;
+                    pending_trace_result_count_register <= input_vector_popcount_register + {{(COUNT_WIDTH-1){1'b0}}, 1'b1};
 
                     // Issue row read to weight memory
                     weight_bank_row_read_enable  <= 1'b1;
