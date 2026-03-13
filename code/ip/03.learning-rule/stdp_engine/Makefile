@@ -20,7 +20,11 @@ RTL_LEAF = $(RTL_DIR)/global_decay_timer.v \
            $(RTL_DIR)/weight_update_logic.v \
            $(RTL_DIR)/neuron_index_to_address_encoder.v \
            $(RTL_DIR)/cluster_connection_matrix.v \
-           $(RTL_DIR)/weight_distribution_receiver.v
+           $(RTL_DIR)/weight_distribution_receiver.v \
+           $(RTL_DIR)/../../../01.neurons/lif_standard_weighted/rtl/Simple_LIF_Neuron_Model_Initial.v  \
+           $(RTL_DIR)/../../../01.neurons/lif_standard_weighted/utils/internal_neuron_accumulator/Internal_neuron_accumulator_v3.v \
+           $(RTL_DIR)/../../../01.neurons/lif_standard_weighted/utils/internal_neuron_counter/Internal_Neuron_counter.v \
+           $(RTL_DIR)/../../../01.neurons/lif_standard_weighted/utils/8bit_to_32bit_extender/8bit_to32bit_extender.v 
 
 RTL_MID  = $(RTL_DIR)/trace_update_module.v \
            $(RTL_DIR)/trace_update_arbiter.v \
