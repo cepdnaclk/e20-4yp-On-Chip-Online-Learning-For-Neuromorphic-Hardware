@@ -1,69 +1,50 @@
-//==============================================================================
-// Project: Neuromorphic Processing System - FYP II
-// Module: Simple Leaky Integrate-and-Fire (LIF) Neuron Model
-// Description: Implements a simplified LIF neuron with spike detection,
-//              threshold management, and temporal dynamics
-// Author: On-chip-Online-Team
-// Date: 2026-01-11
-//==============================================================================
-
+//Neuron model: Simple Leaky Integrate-and-Fire (LIF) Neuron
 `timescale 1ps/1ps
-
-// Note: The following are included during compilation at the top level
 // `include "internal_neuron_accumulator.v"
 // `include "internal_neuron_counter.v"
 
-//==============================================================================
-// MODULE DECLARATION
-//==============================================================================
+
+// Parameters for the neuron model
+
+// Parameter for synaptic weight width
+parameter WEIGHT_WIDTH = 8;
+
+
 
 module simple_LIF_Neuron_Model (
-    // Clock and Control Signals
-    input wire clock,                    // System clock for synchronization
-    input wire reset,                    // Asynchronous reset signal
-    input wire enable,                   // Module enable control
-    
-    // Input/Output Spike Signals
-    input wire input_spike_wire,         // Input spike event trigger
-    output wire spike_output_wire        // Output spike generation signal
+    input wire clock,
+    input wire reset,
+    input wire enable,
+    input wire input_spike_wire,
+    input wire [WEIGHT_WIDTH-1:0] synaptic_weight_wire,
+    output wire spike_output_wire
 );
 
-//==============================================================================
-// INTERNAL SIGNAL DECLARATIONS
-//==============================================================================
-
-// Accumulator Control Signals
-wire internal_neuron_accumulator_enable_wire;     // Enable signal for spike accumulator
-wire internal_neuron_counter_enable_wire;         // Enable signal for timing counter
-wire internal_neuron_counter_reset_wire;          // Reset signal for timing counter
-wire internal_neuron_accumulator_decay_wire;      // Trigger decay operation on accumulator
-wire [31:0] internal_neuron_accumulator_decay_value_wire;  // Decay amount for membrane potential
-
-// Data Signals from Sub-modules
-wire [31:0] accumulator_spike_count_wire;         // Current spike accumulation count
-wire [31:0] internal_count_value_wire;            // Current elapsed time count
+wire internal_neuron_accumulator_enable_wire;
+wire internal_neuron_counter_enable_wire;
+wire internal_neuron_counter_reset_wire;
+wire internal_neuron_accumulator_decay_wire;
+wire [31:0] internal_neuron_accumulator_decay_value_wire;
 
 
-//==============================================================================
-// NEURON CUSTOMIZATION PARAMETERS
-//==============================================================================
-// These registers define the behavior and characteristics of the LIF neuron.
-// Adjust these values to tune neuron response and learning dynamics.
+wire [31:0] accumulator_spike_count_wire;
+wire [31:0] internal_count_value_wire;
 
-// Temporal Parameters
-reg [31:0] spike_time_width_reg = 32'h0003C;     // Time window for spike detection (60 counts)
-reg [31:0] settling_time_reg = 32'h00004;        // Recovery period after spike event (4 counts)
-
-// Threshold Management Parameters
-reg [31:0] threshold_reg = 32'h000A;              // Initial spike threshold (10 spikes)
-reg [31:0] spike_threshold_accumulation_value_reg = 32'h0002;  // Threshold increase per spike (2 units)
-
-// Decay Parameters
-reg [31:0] decay_value_reg = 32'h0001;            // Membrane potential decay per time step (1 unit)
+wire [31:0] internal_synaptic_weight_wire; // 32 bit extended synaptic weight wire
 
 
+// Neuron Customization Registers
 
-
+//creating constant value reg to compare spike time width - with hex value
+reg [31:0] spike_time_width_reg = 32'h00064; // 100 counts = example time window
+// Creting a settling time for the neuron after time window
+reg [31:0] settling_time_reg = 32'h00004; // 4 counts = example value
+// Creating constant value reg for threshold
+reg [31:0] threshold_reg = 32'h00032; // 50 spikes = example value
+// Threshold Accumulation value register
+reg [31:0] spike_threshold_accumulation_value_reg = 32'h0002; // example value
+// Decay value register
+reg [31:0] decay_value_reg = 32'h0001; // example decay value
 
 
 
@@ -90,27 +71,21 @@ reg accumulate_after_spike = 1'b0;
 
 
 
-
-
-
 /****************Instantiating internal modules****************/
 
-// Spike Accumulator Module
-// Purpose: Accumulates incoming spikes and tracks membrane potential
-// Features: Integrates spikes, applies decay, triggers on threshold crossing
+// Instance of internal neuron accumulator
 Internal_neuron_accumulator neuron_accumulator_instance_01(
     .enable(internal_neuron_accumulator_enable_wire),
     .reset(reset),
     .spike_input(input_spike_wire),
-    .spike_count(accumulator_spike_count_wire),
+    .weight_input(internal_synaptic_weight_wire),
     .reset_due_to_spike(spike_output_wire),
     .decay_accumulator(internal_neuron_accumulator_decay_wire),
-    .decay_value(internal_neuron_accumulator_decay_value_wire)
+    .decay_value(internal_neuron_accumulator_decay_value_wire),
+    .spike_count(accumulator_spike_count_wire)
 );
 
-// Timing Counter Module
-// Purpose: Tracks elapsed time within spike detection window
-// Features: Counts clock cycles, enables temporal state management
+// Instance of internal neuron counter
 Internal_neuron_counter neuron_counter_instance_01(
     .clock(clock),
     .reset(internal_neuron_counter_reset_wire),
@@ -119,145 +94,133 @@ Internal_neuron_counter neuron_counter_instance_01(
 );
 
 
-//==============================================================================
-// COMBINATIONAL LOGIC - SIGNAL ASSIGNMENTS
-//==============================================================================
-// These continuous assignments route control signals and data between
-// the neuron state machine and internal functional modules
-
-// Accumulator Control Signals
-assign internal_neuron_accumulator_enable_wire = within_spike_event_reg;     // Enable accumulation during spike window
-assign internal_neuron_accumulator_decay_wire = decay_accumulator_enable_reg;  // Enable decay during recovery
-assign internal_neuron_accumulator_decay_value_wire = decay_value_reg;        // Apply configured decay rate
-
-// Counter Control Signals
-assign internal_neuron_counter_enable_wire = within_spike_event_reg;          // Enable counter during spike window
-assign internal_neuron_counter_reset_wire = internal_neuron_counter_reset_reg; // Reset counter when needed
-
-// Output Signal Routing
-assign spike_output_wire = spike_output_reg;                                  // Route internal spike to output port
+// 8 bit to 32 bit extender instance for synaptic weight
+bit_extender_8_to_32 bit_extender_instance_01 (
+    .input_8_bit(synaptic_weight_wire),
+    .output_wire(internal_synaptic_weight_wire)
+);
 
 
+/****************Neuron logic - behavioral description****************/
 
-//==============================================================================
-// SEQUENTIAL LOGIC - STATE MACHINE
-//==============================================================================
-// This always block implements the core LIF neuron state machine with
-// four distinct operational states:
-//   1. IDLE: Waiting for initial spike
-//   2. ACCUMULATION: Collecting spikes within time window
-//   3. THRESHOLD_CHECK: Monitoring threshold and spike generation
-//   4. SETTLING: Recovery period with membrane decay
-//
-// Triggering events: Clock edges, Reset signal, Input spike events
 
-always @(posedge clock or posedge reset or posedge input_spike_wire) begin
+// Enable logic for internal neuron accumulator - assign to wire at every change in register
+assign internal_neuron_accumulator_enable_wire = within_spike_event_reg;
 
-    // ========================================================================
-    // RESET CONDITION - Initialize all state variables
-    // ========================================================================
-    if (reset) begin
-        spike_output_reg <= 1'b0;
-        within_spike_event_reg <= 1'b0;
-        within_settling_time_reg <= 1'b0;
-        threshold_reg <= 32'h000A;                      // Return to initial threshold
-        spike_threshold_increase_value_reg <= 32'h0000; // Clear learning value
-        internal_neuron_counter_reset_reg <= 1'b1;      // Reset timing counter
-        accumulate_after_spike <= 1'b0;
-    end
-    
-    // ========================================================================
-    // OPERATIONAL LOGIC - Execute only when neuron is enabled
-    // ========================================================================
-    else if (enable) begin
+// Enable logic for internal neuron counter - assign to wire at every change in register
+assign internal_neuron_counter_enable_wire = within_spike_event_reg;
 
-        // ====================================================================
-        // STATE 0: IDLE - No spike event active
-        // ====================================================================
-        // Transition condition: Waiting for initial spike event
-        // Action: Initialize spike detection window
-        // ====================================================================
-        if (within_spike_event_reg == 1'b0 && within_settling_time_reg == 1'b0) begin
-            within_spike_event_reg <= 1'b1;             // Activate spike detection window
-            internal_neuron_counter_reset_reg <= 1'b0;  // Enable counter for time tracking
+// Enable output for spike output - assign to wire at every change in register
+assign spike_output_wire = spike_output_reg;
+
+// Enable logic for decay of accumulator
+assign internal_neuron_accumulator_decay_wire = decay_accumulator_enable_reg;
+
+
+// Enable logic for resetting internal counter
+assign internal_neuron_counter_reset_wire = internal_neuron_counter_reset_reg;
+
+// Drriving the neuron decay value
+assign internal_neuron_accumulator_decay_value_wire = decay_value_reg;
+
+
+// We need to use always block to monitor input spikes and internal counter clock pulse
+// Because to initiate we need a spike.
+// Also we need to monitor the time frame within the spike window - for that we use internal counter value 
+//always @(posedge input_spike_wire or posedge internal_count_value_wire  ) begin
+always @( posedge clock or posedge reset or posedge input_spike_wire) begin
+
+    // Neuron enabled - Open to use the neuron
+    if(enable) begin
+
+        // Reset condition
+        if (reset) begin
+            //Reset all state variables
+            spike_output_reg <= 1'b0;
+            within_spike_event_reg <= 1'b0;
+            within_settling_time_reg <= 1'b0;
+            threshold_reg <= 32'h000A; // reset to initial threshold
+            spike_threshold_increase_value_reg <= 32'h0000; // reset increase value
+            internal_neuron_counter_reset_reg <= 1'b1; // reset internal counter
+            accumulate_after_spike <= 1'b0;
         end
 
-
-        // ====================================================================
-        // STATE 1: ACCUMULATION - Monitoring for threshold crossing
-        // ====================================================================
-        // Transition condition: Spike count reaches threshold, within time window
-        // Action: Generate output spike and update adaptive threshold
-        // ====================================================================
-        if ((accumulator_spike_count_wire >= threshold_reg) && 
-            (within_settling_time_reg == 1'b0) && 
-            (within_spike_event_reg == 1'b1)) begin
-            
-            // Output spike generation
-            spike_output_reg <= 1'b1;
-            
-            // Adaptive threshold: Increase threshold to prevent redundant firing
-            // This implements Hebbian learning - neurons that just fired become
-            // less responsive to prevent continuous firing
-            spike_threshold_increase_value_reg <= spike_threshold_increase_value_reg + 
-                                                   spike_threshold_accumulation_value_reg;
-            threshold_reg <= threshold_reg + spike_threshold_increase_value_reg;
-            
-            // Note: spike_output_reg connects to accumulator's reset signal,
-            // automatically resetting membrane potential after spike generation
-            
-            // Feature control: Define post-spike accumulation behavior
-            if (accumulate_after_spike) begin
-                // Allow continued accumulation after spike (TBD implementation)
-                // This enables burst firing behavior
-            end else begin
-                // Prevent accumulation after spike (TBD implementation)
-                // This enables single-spike-per-window behavior
-            end
-        end
+        else  begin
+            //Spike received or clock pulse
         
-        // ================================================================
-        // STATE 2: TIME WINDOW EXPIRATION - Transition to settling phase
-        // ================================================================
-        // Transition condition: Elapsed time exceeds spike detection window
-        // Action: Close spike accumulation window and initiate recovery
-        // ================================================================
-        if ((internal_count_value_wire >= spike_time_width_reg) && 
-            (within_spike_event_reg == 1'b1) && 
-            (within_settling_time_reg == 1'b0)) begin
-            
-            within_spike_event_reg <= 1'b0;  // Disable spike accumulation
-            
-            // Reset output spike signal if it was generated during window
-            if (spike_output_reg == 1'b1) begin
-                spike_output_reg <= 1'b0;
+                //0.0 This state is when the initial spike is received - Time window is initially not active, and at end of time window we will change the state variables
+                
+                if(within_spike_event_reg == 1'b0 && within_settling_time_reg== 1'b0) begin
+                    //Not within spike event - start new spike event
+                    within_spike_event_reg <= 1'b1;
+                    //Revert the internal counter
+                    internal_neuron_counter_reset_reg <= 1'b0;
+                end
+
+                //Within spike event
+                
+                //1.0 Before ending time window, check if threshold reached - it seems some parts are redundant - we can simply change the threshhold reg directly
+                if((accumulator_spike_count_wire >= threshold_reg) && within_settling_time_reg == 1'b0 && within_spike_event_reg == 1'b1) begin
+                    //Threshold reached - generate output spike
+                    spike_output_reg = 1'b1;
+                    //Updating the threshold to a high value to prevent learning same information 
+                    spike_threshold_increase_value_reg = spike_threshold_increase_value_reg + spike_threshold_accumulation_value_reg;
+                    threshold_reg = threshold_reg + spike_threshold_increase_value_reg;
+                    // Reseting the mebran potential by resetting the spike count
+                    //as spike_output_reg is connected to reset_due_to_spike of accumulator - it will reset 
+
+
+                    // Managing the accumulation
+                    if(accumulate_after_spike) begin
+                        // Doing nothing
+
+                    end else begin
+
+                        // Disabling the accumulator
+                    end 
+                end
+
+   
+                //2.0 Before ending time window, threshold not reached - do nothing
+
+
+                //3.0 Time window has ended
+                if ((internal_count_value_wire >= spike_time_width_reg) && within_spike_event_reg == 1'b1 && within_settling_time_reg == 1'b0) begin
+                    //Time window ended - reset state variables
+                    within_spike_event_reg <= 1'b0;
+
+                    if(spike_output_reg == 1'b1) begin
+                        //If output spike was generated, reset it
+                        spike_output_reg <= 1'b0;
+                    end
+                    
+                    //Reset internal counter
+                    internal_neuron_counter_reset_reg <= 1'b1;
+                    //Adding some delay to reset signal
+                    // #5;
+                    // internal_neuron_counter_reset_reg = 1'b0;
+
+                    within_settling_time_reg <= 1'b1;
+                end
+
+
+                //4.0 Settling time management
+                if (internal_count_value_wire >= (spike_time_width_reg + settling_time_reg) && within_settling_time_reg == 1'b1) begin
+                    //Settling time ended - reset state variables
+                    within_settling_time_reg <= 1'b0;
+
+                    //Decaying the membran potential by reducing the threshold
+                    decay_accumulator_enable_reg <= 1'b1;
+
+                    //Reset internal counter
+                    internal_neuron_counter_reset_reg <= 1'b0;
+                    //Adding some delay to reset signal
+                    // #5;
+                    // internal_neuron_counter_reset_reg = 1'b0;
+                end
+
             end
-            
-            internal_neuron_counter_reset_reg <= 1'b1; // Prepare counter reset
-            within_settling_time_reg <= 1'b1;          // Enter settling phase
-        end
-
-
-        // ================================================================
-        // STATE 3: SETTLING PHASE - Membrane decay and recovery
-        // ================================================================
-        // Transition condition: Settling period expires
-        // Action: Enable decay of membrane potential, return to IDLE
-        // ================================================================
-        if ((internal_count_value_wire >= (spike_time_width_reg + settling_time_reg)) && 
-            (within_settling_time_reg == 1'b1)) begin
-            
-            within_settling_time_reg <= 1'b0;         // Exit settling phase
-            decay_accumulator_enable_reg <= 1'b1;     // Activate membrane decay
-            internal_neuron_counter_reset_reg <= 1'b0; // Enable counter if needed
-        end
-
     end
 end
 
 endmodule
-
-
-// ============================================================================
-// MODULE END
-// ============================================================================
