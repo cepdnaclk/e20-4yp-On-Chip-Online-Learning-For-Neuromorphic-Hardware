@@ -7,7 +7,7 @@
 // Parameters for the neuron model
 
 // Parameter for synaptic weight width
-parameter WEIGHT_WIDTH = 8;
+// parameter WEIGHT_WIDTH = 8;
 
 
 
@@ -19,6 +19,8 @@ module simple_LIF_Neuron_Model (
     input wire [WEIGHT_WIDTH-1:0] synaptic_weight_wire,
     output wire spike_output_wire
 );
+
+parameter WEIGHT_WIDTH = 8;
 
 wire internal_neuron_accumulator_enable_wire;
 wire internal_neuron_counter_enable_wire;
