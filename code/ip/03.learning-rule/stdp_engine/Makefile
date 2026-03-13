@@ -2,35 +2,39 @@
 # Spike-Timing-Dependent Plasticity Learning Engine
 
 # Directories
-RTL_DIR = rtl
-TB_DIR = tb
+RTL_DIR  = rtl
+TB_DIR   = tb
 BUILD_DIR = ../../../build
 
 # Tool Configuration
 IVERILOG = iverilog
-VVP = vvp
-GTKWAVE = gtkwave
+VVP      = vvp
+GTKWAVE  = gtkwave
 
-# Source Files
-RTL_SOURCES = $(RTL_DIR)/stdp_trace.v $(RTL_DIR)/weight_update.v
-TB_SOURCES = $(TB_DIR)/tb_stdp_engine.v
+# -----------------------------------------------------------------------
+# neuron_cluster target
+# -----------------------------------------------------------------------
+NC_RTL_SOURCES = $(RTL_DIR)/neuron_cluster.v
+NC_TB_SOURCES  = $(TB_DIR)/tb_neuron_cluster.v
+NC_TARGET      = $(BUILD_DIR)/neuron_cluster
 
-# Targets
-TARGET = $(BUILD_DIR)/stdp_engine
-
-.PHONY: all sim clean wave
+.PHONY: all sim sim_nc wave_nc clean
 
 all: sim
 
-sim: $(TARGET)
-	$(VVP) $(TARGET)
+# Default simulation target: neuron_cluster testbench
+sim: sim_nc
 
-$(TARGET): $(RTL_SOURCES) $(TB_SOURCES)
+sim_nc: $(NC_TARGET)
+	$(VVP) $(NC_TARGET)
+
+$(NC_TARGET): $(NC_RTL_SOURCES) $(NC_TB_SOURCES)
 	@mkdir -p $(BUILD_DIR)
-	$(IVERILOG) -o $(TARGET) -I$(RTL_DIR) -I../../../global_inc $(TB_SOURCES) $(RTL_SOURCES)
+	$(IVERILOG) -o $(NC_TARGET) -I$(RTL_DIR) -I../../../global_inc \
+	    $(NC_TB_SOURCES) $(NC_RTL_SOURCES)
 
-wave:
-	$(GTKWAVE) $(BUILD_DIR)/stdp_engine.vcd &
+wave_nc:
+	$(GTKWAVE) $(BUILD_DIR)/tb_neuron_cluster.vcd &
 
 clean:
-	rm -f $(BUILD_DIR)/stdp_engine*
+	rm -f $(BUILD_DIR)/neuron_cluster*
