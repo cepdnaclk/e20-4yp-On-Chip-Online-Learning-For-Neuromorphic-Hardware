@@ -116,10 +116,17 @@ test_neuron_cluster: dir
 	@cp $(TB_DIR)/init_weights.hex ./
 	$(VVP) $(BUILD_DIR)/tb_neuron_cluster.vvp
 
-# v2 integration test — 8-neuron, inline init, stub neuron
-# Real neuron files are excluded. The stub (simple_LIF_Neuron_Model)
+# v2 integration test — 16-neuron, inline init, stub neuron
+# Real neuron files are excluded. The stub (module neuron)
 # is defined at the top of tb_neuron_cluster_v2.v.
 # No init_weights.hex required — all memory set inline via direct assignment.
+# New test groups vs v1:
+#   Group A: Multi-input LTP    (neurons 5, 7, 9 → neuron 0)
+#   Group B: Lazy-decay + LTP   (16 decay pulses then second spike)
+#   Group C: LTP saturation     (W starts at 0xFF, must not overflow)
+#   Group D: LTD underflow      (W starts at 0x00, must not wrap)
+#   Group E: 4-way simultaneous spikes (queue serialisation stress)
+#   Group F: Mid-run reset and clean restart
 test_neuron_cluster_v2: dir
 	$(IVERILOG) -o $(BUILD_DIR)/tb_neuron_cluster_v2.vvp \
 		$(RTL_V2) \

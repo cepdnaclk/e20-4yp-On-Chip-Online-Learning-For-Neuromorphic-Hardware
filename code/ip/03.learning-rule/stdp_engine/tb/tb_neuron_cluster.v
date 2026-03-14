@@ -30,23 +30,23 @@
 // bypassing the stub's internal logic entirely. This correctly models the
 // spike queue receiving a spike without needing the full neuron model.
 // =============================================================================
-module neuron #(
-    parameter WEIGHT_BIT_WIDTH = 8
-)(
-    input  wire                         clock,
-    input  wire                         reset,
-    input  wire                         enable,
-    input  wire                         input_spike_wire,
-    input  wire [WEIGHT_BIT_WIDTH-1:0]  weight_input,
-    output reg                          spike_output_wire
-);
-    // Stub holds spike low. Testbench uses force to inject spikes.
-    always @(posedge clock) begin
-        if (reset || !enable)
-            spike_output_wire <= 1'b0;
-        // spike_output_wire remains 0 unless testbench forces it
-    end
-endmodule
+// module neuron #(
+//     parameter WEIGHT_BIT_WIDTH = 8
+// )(
+//     input  wire                         clock,
+//     input  wire                         reset,
+//     input  wire                         enable,
+//     input  wire                         input_spike_wire,
+//     input  wire [WEIGHT_BIT_WIDTH-1:0]  weight_input,
+//     output reg                          spike_output_wire
+// );
+//     // Stub holds spike low. Testbench uses force to inject spikes.
+//     always @(posedge clock) begin
+//         if (reset || !enable)
+//             spike_output_wire <= 1'b0;
+//         // spike_output_wire remains 0 unless testbench forces it
+//     end
+// endmodule
 
 // =============================================================================
 // Main testbench
