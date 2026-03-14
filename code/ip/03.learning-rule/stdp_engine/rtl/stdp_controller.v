@@ -183,6 +183,11 @@ module stdp_controller #(
     always @(posedge clock) begin
         if (reset) begin
             state_register                              <= STDP_CTRL_IDLE;
+            connection_matrix_read_row_address          <= {NEURON_ADDRESS_WIDTH{1'b0}};
+            trace_memory_read_neuron_address            <= {NEURON_ADDRESS_WIDTH{1'b0}};
+            weight_bank_row_read_address                <= {WEIGHT_BANK_ADDRESS_WIDTH{1'b0}};
+            weight_bank_column_pre_neuron_address       <= {NEURON_ADDRESS_WIDTH{1'b0}};
+            weight_bank_column_step_counter             <= {NEURON_ADDRESS_WIDTH{1'b0}};
             stdp_controller_busy_flag                   <= 1'b0;
             input_vector_popcount_register = {COUNT_WIDTH{1'b0}};
             fired_neuron_address_acknowledge            <= 1'b0;
