@@ -7,11 +7,10 @@
 // Parameters for the neuron model
 
 // Parameter for synaptic weight width
-parameter WEIGHT_WIDTH = 8;
 
-
-
-module simple_LIF_Neuron_Model (
+module simple_LIF_Neuron_Model #(
+    parameter WEIGHT_WIDTH = 8
+) (
     input wire clock,
     input wire reset,
     input wire enable,

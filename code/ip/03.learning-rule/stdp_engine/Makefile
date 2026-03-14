@@ -99,6 +99,7 @@ test_neuron_cluster: dir
 	$(IVERILOG) -o $(BUILD_DIR)/tb_neuron_cluster.vvp \
 		$(RTL_ALL) \
 		$(TB_DIR)/tb_neuron_cluster.v
+	@cp $(TB_DIR)/init_weights.hex ./
 	$(VVP) $(BUILD_DIR)/tb_neuron_cluster.vvp
 
 # =============================================================================
@@ -125,4 +126,4 @@ wave_%:
 # =============================================================================
 
 clean:
-	rm -rf $(BUILD_DIR) *.vcd
+	rm -rf $(BUILD_DIR) *.vcd *.hex

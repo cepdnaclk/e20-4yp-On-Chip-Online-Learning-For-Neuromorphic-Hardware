@@ -343,7 +343,7 @@ module neuron_cluster #(
                 .reset               (reset),
                 .enable              (neuron_enable_wire),
                 .input_spike_wire    (receiver_held_weight_valid[ni]),
-                .weight_input        (receiver_held_weight[ni]),
+                .synaptic_weight_wire(receiver_held_weight[ni]),
                 .spike_output_wire   (neuron_spike_output_wires[ni])
             );
         end

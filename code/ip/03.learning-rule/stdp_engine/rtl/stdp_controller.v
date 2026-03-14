@@ -184,6 +184,7 @@ module stdp_controller #(
         if (reset) begin
             state_register                              <= STDP_CTRL_IDLE;
             stdp_controller_busy_flag                   <= 1'b0;
+            input_vector_popcount_register = {COUNT_WIDTH{1'b0}};
             fired_neuron_address_acknowledge            <= 1'b0;
             trace_memory_write_enable                   <= 1'b0;
             arbiter_request_valid                       <= 1'b0;

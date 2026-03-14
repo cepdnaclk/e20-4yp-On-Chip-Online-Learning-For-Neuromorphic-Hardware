@@ -221,23 +221,29 @@ module tb_neuron_cluster;
         input [NEURON_ADDRESS_WIDTH-1:0] neuron_index;
         begin
             case (neuron_index)
-                2'd0: force   uut.neuron_inst[0].spike_output_wire = 1'b1;  // UPDATE PATH
-                2'd1: force   uut.neuron_inst[1].spike_output_wire = 1'b1;  // UPDATE PATH
-                2'd2: force   uut.neuron_inst[2].spike_output_wire = 1'b1;  // UPDATE PATH
-                2'd3: force   uut.neuron_inst[3].spike_output_wire = 1'b1;  // UPDATE PATH
+                2'd0: force   uut.gen_neurons[0].neuron_inst.spike_output_wire = 1'b1;  // UPDATE PATH
+                2'd1: force   uut.gen_neurons[1].neuron_inst.spike_output_wire = 1'b1;  // UPDATE PATH
+                2'd2: force   uut.gen_neurons[2].neuron_inst.spike_output_wire = 1'b1;  // UPDATE PATH
+                2'd3: force   uut.gen_neurons[3].neuron_inst.spike_output_wire = 1'b1;  // UPDATE PATH
                 default: $display("[TB] inject_spike: invalid index %0d", neuron_index);
             endcase
             @(posedge clock); #1;
             case (neuron_index)
-                2'd0: release uut.neuron_inst[0].spike_output_wire;         // UPDATE PATH
-                2'd1: release uut.neuron_inst[1].spike_output_wire;         // UPDATE PATH
-                2'd2: release uut.neuron_inst[2].spike_output_wire;         // UPDATE PATH
-                2'd3: release uut.neuron_inst[3].spike_output_wire;         // UPDATE PATH
+                2'd0: release uut.gen_neurons[0].neuron_inst.spike_output_wire;         // UPDATE PATH
+                2'd1: release uut.gen_neurons[1].neuron_inst.spike_output_wire;         // UPDATE PATH
+                2'd2: release uut.gen_neurons[2].neuron_inst.spike_output_wire;         // UPDATE PATH
+                2'd3: release uut.gen_neurons[3].neuron_inst.spike_output_wire;         // UPDATE PATH
                 default: ;
             endcase
         end
     endtask
-
+    // =========================================================================
+    // Memory Initialization Variables
+    // =========================================================================
+    localparam TOTAL_WEIGHTS = NUM_WEIGHT_BANKS * (1 << WEIGHT_BANK_ADDRESS_WIDTH);
+    reg [WEIGHT_BIT_WIDTH-1:0] temp_weights [0:TOTAL_WEIGHTS-1];
+    integer bank_idx;
+    integer addr_idx;
     // =========================================================================
     // Functions: compute expected weight after LTP and LTD
     // These mirror the default weight_update_logic implementation (spec 4.7)
@@ -387,32 +393,37 @@ module tb_neuron_cluster;
         //               connection_table[0][2] = 2'b01
         // UPDATE PATH: replace 'connection_matrix_inst' and 'connection_table'
         //              with actual instance and array names from neuron_cluster.v
-        force uut.connection_matrix_inst.connection_table[0][1] = 2'b10;
-        force uut.connection_matrix_inst.connection_table[0][2] = 2'b01;
+        uut.connection_matrix_inst.connection_table[0][1] = 2'b10;
+        uut.connection_matrix_inst.connection_table[0][2] = 2'b01;
         @(posedge clock); #1;
-        release uut.connection_matrix_inst.connection_table[0][1];
-        release uut.connection_matrix_inst.connection_table[0][2];
+        // uut.connection_matrix_inst.connection_table[0][1];
+        // uut.connection_matrix_inst.connection_table[0][2];
 
-        $display("--- Setup: pre-loading weight W[0][1]=100 → Bank 1 Addr 0 ---");
-        // UPDATE PATH: replace 'weight_memory_inst' and 'bank_array'
-        //              with actual instance and array names from banked_weight_memory.v
-        force uut.weight_memory_inst.bank_array[1][0] = INITIAL_WEIGHT_NEURON1_TO_NEURON0;
+        $display("--- Setup: loading weights from init_weights.hex ---");
+        // Read the external hex file into the temporary 1D array
+        $readmemh("init_weights.hex", temp_weights);
+        
+        // Distribute the 1D array into the 2D memory bank
+        for (bank_idx = 0; bank_idx < NUM_WEIGHT_BANKS; bank_idx = bank_idx + 1) begin
+            for (addr_idx = 0; addr_idx < (1 << WEIGHT_BANK_ADDRESS_WIDTH); addr_idx = addr_idx + 1) begin
+                uut.weight_memory_inst.bank_memory[bank_idx][addr_idx] = 
+                    temp_weights[(bank_idx << WEIGHT_BANK_ADDRESS_WIDTH) + addr_idx];
+            end
+        end
         @(posedge clock); #1;
-        release uut.weight_memory_inst.bank_array[1][0];
 
         $display("--- Setup: pre-loading neuron 1 trace: value=128, timestamp=0, saturated=0 ---");
         // 21-bit entry layout: {saturated_flag(1), timestamp(12), value(8)}
         // UPDATE PATH: replace 'trace_memory_inst' and 'memory_array'
         //              with actual instance and array names from trace_memory.v
-        force uut.trace_memory_inst.memory_array[1] = {1'b0, 12'd0, PRE_TRACE_VALUE_NEURON1};
+        uut.trace_memory_inst.trace_entries[1] = {1'b0, 12'd0, PRE_TRACE_VALUE_NEURON1};
         @(posedge clock); #1;
-        release uut.trace_memory_inst.memory_array[1];
 
         // ================================================================
         // T02: Verify trace memory holds the pre-loaded neuron 1 entry
         // ================================================================
         #1;
-        actual_trace_entry = uut.trace_memory_inst.memory_array[1]; // UPDATE PATH
+        actual_trace_entry = uut.trace_memory_inst.trace_entries[1]; // UPDATE PATH
         check_result(
             actual_trace_entry[7:0]  === PRE_TRACE_VALUE_NEURON1 &&
             actual_trace_entry[20]   === 1'b0 &&
@@ -423,7 +434,7 @@ module tb_neuron_cluster;
         // ================================================================
         // T03: Verify initial weight in Bank 1 Addr 0
         // ================================================================
-        actual_weight = uut.weight_memory_inst.bank_array[1][0]; // UPDATE PATH
+        actual_weight = uut.weight_memory_inst.bank_memory[1][0]; // UPDATE PATH
         check_result(
             actual_weight === INITIAL_WEIGHT_NEURON1_TO_NEURON0,
             "Initial weight W[0][1]=100 stored at Bank 1 Addr 0"
@@ -465,7 +476,7 @@ module tb_neuron_cluster;
         // Expected new weight = 100 + 32 = 132
         // ================================================================
         #2; // allow write-back to propagate
-        actual_weight   = uut.weight_memory_inst.bank_array[1][0]; // UPDATE PATH
+        actual_weight   = uut.weight_memory_inst.bank_memory[1][0]; // UPDATE PATH
         expected_weight = expected_weight_after_ltp(INITIAL_WEIGHT_NEURON1_TO_NEURON0,
                                                     PRE_TRACE_VALUE_NEURON1);
         weight_after_first_ltp = expected_weight; // save for T10
@@ -481,7 +492,7 @@ module tb_neuron_cluster;
         // INCREASE_MODE=0 (SET_MAX): trace → 8'hFF when neuron fires.
         // The STDP controller writes this back to trace_memory.
         // ================================================================
-        actual_trace_entry = uut.trace_memory_inst.memory_array[0]; // UPDATE PATH
+        actual_trace_entry = uut.trace_memory_inst.trace_entries[0]; // UPDATE PATH
         check_result(
             actual_trace_entry[7:0] === POST_TRACE_SET_MAX &&
             actual_trace_entry[20]  === 1'b0,
@@ -516,7 +527,7 @@ module tb_neuron_cluster;
         // Lazy decay means the stored value is NOT updated in place.
         // The effective value is computed on-demand when trace is fetched.
         // ================================================================
-        actual_trace_entry = uut.trace_memory_inst.memory_array[0]; // UPDATE PATH
+        actual_trace_entry = uut.trace_memory_inst.trace_entries[0]; // UPDATE PATH
         check_result(
             actual_trace_entry[7:0] === POST_TRACE_SET_MAX,
             "Neuron 0 raw trace still 0xFF (lazy decay: no in-place update)"
@@ -547,7 +558,7 @@ module tb_neuron_cluster;
         $display("       Completed in %0d cycles", wait_cycles);
 
         #2;
-        actual_weight     = uut.weight_memory_inst.bank_array[1][0]; // UPDATE PATH
+        actual_weight     = uut.weight_memory_inst.bank_memory[1][0]; // UPDATE PATH
         effective_pre_trace = compute_effective_trace(PRE_TRACE_VALUE_NEURON1, 12'd8);
         expected_weight   = expected_weight_after_ltp(weight_after_first_ltp,
                                                       effective_pre_trace);
@@ -574,7 +585,7 @@ module tb_neuron_cluster;
             "STDP cycle for neuron 3 (no connections) completes");
 
         #2;
-        actual_weight = uut.weight_memory_inst.bank_array[1][0]; // UPDATE PATH
+        actual_weight = uut.weight_memory_inst.bank_memory[1][0]; // UPDATE PATH
         check_result(
             actual_weight === expected_weight,
             "W[0][1] unchanged after neuron 3 fires (not connected)"
@@ -588,11 +599,11 @@ module tb_neuron_cluster;
         // ================================================================
         $display("--- Test: simultaneous spikes on neurons 1 and 2 ---");
         // Force both at once
-        force uut.neuron_inst[1].spike_output_wire = 1'b1; // UPDATE PATH
-        force uut.neuron_inst[2].spike_output_wire = 1'b1; // UPDATE PATH
+        force uut.gen_neurons[1].neuron_inst.spike_output_wire = 1'b1; // UPDATE PATH
+        force uut.gen_neurons[2].neuron_inst.spike_output_wire = 1'b1; // UPDATE PATH
         @(posedge clock); #1;
-        release uut.neuron_inst[1].spike_output_wire;      // UPDATE PATH
-        release uut.neuron_inst[2].spike_output_wire;      // UPDATE PATH
+        release uut.gen_neurons[1].neuron_inst.spike_output_wire;      // UPDATE PATH
+        release uut.gen_neurons[2].neuron_inst.spike_output_wire;      // UPDATE PATH
 
         repeat(3) @(posedge clock); #1;
         check_result(cluster_busy_flag,
