@@ -74,14 +74,6 @@ The system is evaluated using **accuracy** and **latency** as primary performanc
 
 *Figure 3: Classification accuracy across training epochs.*
 
-![Accuracy Result 2](./images/accuracy_result_2.png)
-
-*Figure 4: Accuracy comparison across encoding schemes.*
-
-![Accuracy Result 3](./images/accuracy_result_3.png)
-
-*Figure 5: Accuracy vs. latency trade-off analysis.*
-
 ## Conclusion
 
 This project presents the design of an on-chip online learning accelerator for neuromorphic hardware, integrating STDP-based synaptic plasticity to enable continuous adaptation without off-chip retraining. The hardware implementation of the EONS system, augmented with spike-timing-dependent learning, is aimed at improving classification robustness in resource-constrained environments. Verilog RTL design combined with C++ simulation provides a pathway from algorithmic validation to physical implementation. The work contributes toward making neuromorphic online learning practical for embedded and edge computing applications.
