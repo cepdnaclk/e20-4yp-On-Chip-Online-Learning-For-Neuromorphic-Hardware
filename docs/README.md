@@ -72,7 +72,7 @@ The system is evaluated using **accuracy** and **latency** as primary performanc
 
 ![Accuracy Result 1](./images/accuracy_result_1.png)
 
-*Figure 3: Classification accuracy across training epochs.*
+*Figure 3: Accuracy comparison against existing systems.*
 
 ## Conclusion
 
