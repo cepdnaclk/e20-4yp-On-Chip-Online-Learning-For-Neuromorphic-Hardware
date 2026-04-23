@@ -60,7 +60,7 @@ Key implementation parameters include:
 
 **Accelerator Design Diagram**
 
-![Accelerator Design Diagram](./images/accelerator_design.png)
+![Accelerator Design Diagram](./images/accelerator_design2.png)
 
 *Figure 2: Detailed microarchitecture of the neuromorphic hardware accelerator.*
 
