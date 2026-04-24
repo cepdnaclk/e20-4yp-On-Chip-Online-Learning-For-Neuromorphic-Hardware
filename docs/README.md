@@ -38,7 +38,7 @@ Spiking Neural Networks (SNNs) have become highly attractive for processing sens
 
 ## Methodology
 
-The system operates using a Hardware-Software (HW/SW) co-design architecture to prevent overpopulating the silicon area with complex, non-critical control components. Computationally heavy genetic operations—such as fitness calculation, tournament selection, and cross-over—are partitioned into software. 
+The system operates using a Hardware-Software (HW/SW) co-design architecture to prevent overpopulating the silicon area with complex, non-critical control components. Computationally heavy genetic operations—such as fitness calculation, tournament selection, and cross-over are partitioned into software. 
 
 Conversely, the high-throughput, event-driven data paths are implemented strictly in hardware. The hardware accelerator utilizes a Leaky Integrate-and-Fire (LIF) neuron model and consists of a Rate Encoder to convert real-valued inputs into spike trains, an Inference Unit (featuring a Network-on-Chip and banked neuron arrays), and an Evolutionary State Manager to handle the learning loops. 
 
