@@ -30,17 +30,17 @@ title: On-Chip Online Learning For Neuromorphic Hardware
 
 ## Abstract
 
-Neuromorphic computing offers a promising paradigm for energy-efficient, brain-inspired information processing. This project focuses on the design and implementation of an on-chip online learning accelerator targeting neuromorphic hardware. The accelerator is built around a Spiking Neural Network (SNN) architecture, incorporating Spike-Timing-Dependent Plasticity (STDP) as the on-chip learning mechanism. A hardware implementation of the Evolutionary Optimized Neuromorphic System (EONS) is also explored, where STDP-based synaptic adaptation is employed to enhance system robustness. The design is realized using Verilog RTL description, with C++ simulations used for preliminary functional and performance validation. Accuracy and latency serve as the primary evaluation metrics for assessing system performance.
+Conventional Deep Neural Networks (DNNs) face significant energy and latency challenges on edge devices due to dense matrix multiplications and catastrophic forgetting. While Spiking Neural Networks (SNNs) and local learning rules like Spike-Timing-Dependent Plasticity (STDP) offer energy-efficient alternatives, they are fundamentally limited by a persistent accuracy plateau. This project presents a Hardware-Software (HW/SW) co-design accelerator that utilizes Evolutionary Optimization for Neuromorphic Systems (EONS) to overcome these limitations. The architecture partitions high-throughput neural data paths into Register-Transfer Level (RTL) hardware while offloading complex genetic operations (like fitness calculation and crossover) to software. Software simulations show that EONS surpasses the STDP bottleneck, achieving 95% accuracy compared to the STDP baseline of 87%. Although cycle-accurate hardware co-simulations achieved a lower 71% accuracy due to bit-width quantization, this work provides a successful functional proof-of-concept for gradient-free, on-chip online learning in power-constrained embedded systems.
 
 ## Related Works
 
-Spiking Neural Networks have been studied extensively as biologically plausible models for computation. Prior work such as Diehl & Cook (2015) demonstrated competitive classification accuracy using STDP-based unsupervised learning on the MNIST dataset. Neuromorphic platforms such as Intel's Loihi and IBM's TrueNorth have shown the feasibility of on-chip learning in dedicated hardware. The EONS framework builds upon evolutionary strategies to optimize network topology and synaptic parameters for improved generalization. This project draws from these foundations to design a hardware accelerator that supports online learning directly on chip, targeting both accuracy improvement and low-latency inference.
+Spiking Neural Networks (SNNs) have become highly attractive for processing sensory information on resource-constrained edge platforms due to their event-driven, low-power paradigm. However, traditional on-chip unsupervised learning rules like STDP face a performance bottleneck, typically hitting an accuracy ceiling of 90% to 95% on benchmarks like MNIST. To overcome this, recent non-STDP accelerators rely on global gradient-based backpropagation (BPTT), which can achieve over 99% accuracy but consumes prohibitive amounts of power (~14W to >20W), violating strict edge constraints. The EONS framework provides a highly flexible, gradient-free alternative by treating network training as an evolutionary search problem. Because it does not rely on backward error propagation, EONS natively accounts for physical hardware constraints while producing compact, highly accurate spiking networks.
 
 ## Methodology
 
-The system is designed around a pipelined SNN accelerator that supports online weight updates via a trace-based STDP learning rule. The high-level architecture partitions the design into a neuron processing core, a synaptic weight memory subsystem, and a learning controller. Spike-timing traces for both pre- and post-synaptic neurons are maintained on-chip to compute Long-Term Potentiation (LTP) and Long-Term Depression (LTD) updates in real time.
+The system operates using a Hardware-Software (HW/SW) co-design architecture to prevent overpopulating the silicon area with complex, non-critical control components. Computationally heavy genetic operations—such as fitness calculation, tournament selection, and cross-over—are partitioned into software. 
 
-For the EONS hardware implementation, the network topology and initial weight configuration produced by the evolutionary optimization process are mapped onto the hardware architecture. STDP is then applied during operation to allow the system to adapt and maintain robustness under varying input conditions.
+Conversely, the high-throughput, event-driven data paths are implemented strictly in hardware. The hardware accelerator utilizes a Leaky Integrate-and-Fire (LIF) neuron model and consists of a Rate Encoder to convert real-valued inputs into spike trains, an Inference Unit (featuring a Network-on-Chip and banked neuron arrays), and an Evolutionary State Manager to handle the learning loops. 
 
 **High-Level Design Diagram**
 
@@ -50,13 +50,9 @@ For the EONS hardware implementation, the network topology and initial weight co
 
 ## Experiment Setup and Implementation
 
-The accelerator is described in Verilog and targeted for FPGA implementation. C++ simulations are used in the preliminary stages to validate the SNN dynamics, encoding schemes, and STDP weight update behaviour before hardware synthesis. The test environment uses standard benchmark datasets to evaluate classification performance.
+To evaluate the partitioned EONS architecture, a comprehensive hardware-software co-simulation methodology was established. Verilator was utilized to perform cycle-accurate co-simulations. The core event-driven components were implemented at the Register-Transfer Level (RTL) and seamlessly interfaced with the software-designated evolutionary components written natively in C++. 
 
-Key implementation parameters include:
-- **Encoding:** Rate and temporal spike encoding schemes
-- **Weight representation:** 8-bit integer weights with 16-bit accumulators
-- **Learning rule:** Trace-based STDP with configurable LTP/LTD time constants
-- **Memory:** Dual-port SRAM organisation for concurrent synaptic read/write access
+The accelerator was benchmarked using the standard MNIST handwritten digit dataset using a rate-coding scheme. To calculate fitness efficiently, the C++ Inference Controller dynamically samples a representative subset (10%) of the total dataset for manual testing. Over a defined number of generations, the C++ Cross-Over unit generates new network parameters that are continually written back to the hardware Neuron Arrays.
 
 **Accelerator Design Diagram**
 
@@ -66,7 +62,9 @@ Key implementation parameters include:
 
 ## Results and Analysis
 
-The system is evaluated using **accuracy** and **latency** as primary performance metrics. Results from both C++ simulation and hardware implementation are presented below.
+The system was evaluated primarily on **classification accuracy** to determine its viability for resource-constrained edge systems. 
+
+In initial software-only algorithmic simulations, the dynamically evolved EONS network bypassed the traditional STDP performance ceiling, achieving a superior classification accuracy of 95% (compared to the 87.4% baseline of trace-based STDP). However, during the cycle-accurate Verilator co-simulation of the RTL implementation, the HW/SW architecture achieved a peak accuracy of 71%. This accuracy drop is attributed to strict bit-width quantization (specifically within the 8-to-32 bit extender), limited accumulator resolution, and precision loss when truncating weights generated by the software crossover unit. 
 
 **Accuracy Results**
 
@@ -76,11 +74,11 @@ The system is evaluated using **accuracy** and **latency** as primary performanc
 
 ![Accuracy Result 2](./images/hardware_accuracy.PNG)
 
-*Figure 3: Hardware accuracy comparison against existing systems.*
+*Figure 4: Hardware accuracy comparison against existing systems.*
 
 ## Conclusion
 
-This project presents the design of an on-chip online learning accelerator for neuromorphic hardware, integrating STDP-based synaptic plasticity to enable continuous adaptation without off-chip retraining. The hardware implementation of the EONS system, augmented with spike-timing-dependent learning, is aimed at improving classification robustness in resource-constrained environments. Verilog RTL design combined with C++ simulation provides a pathway from algorithmic validation to physical implementation. The work contributes toward making neuromorphic online learning practical for embedded and edge computing applications.
+This project successfully validates a hardware-software co-simulation architecture designed to execute Evolutionary Optimization for Neuromorphic Systems (EONS) at the edge. By partitioning event-driven neural datapaths into RTL hardware and complex genetic operations into software, the system demonstrates the functional viability of gradient-free, on-chip learning. While the architecture establishes a scalable framework for Neuromorphic Continual Learning (NCL), classification accuracy plateaued at 71% due to physical hardware bottlenecks such as low-bitwidth fixed-point precision and rate coding limitations. Future iterations will aim to resolve these bottlenecks by exploring advanced multi-point crossover algorithms and high-density temporal coding schemes, such as Time-to-First-Spike (TTFS).
 
 ## Publications
 
