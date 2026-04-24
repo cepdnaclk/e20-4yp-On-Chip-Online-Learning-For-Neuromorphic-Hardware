@@ -70,9 +70,13 @@ The system is evaluated using **accuracy** and **latency** as primary performanc
 
 **Accuracy Results**
 
-![Accuracy Result 1](./images/accuracy_result_1.png)
+![Accuracy Result 1](./images/software_accuracy.PNG)
 
-*Figure 3: Accuracy comparison against existing systems.*
+*Figure 3: Software accuracy comparison against existing systems.*
+
+![Accuracy Result 2](./images/hardware_accuracy.PNG)
+
+*Figure 3: Hardware accuracy comparison against existing systems.*
 
 ## Conclusion
 
