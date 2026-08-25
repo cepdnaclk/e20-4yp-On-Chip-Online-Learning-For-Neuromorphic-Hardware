@@ -156,14 +156,16 @@ test_neuron_cluster_v2: dir
 # MNIST IDX files must be in $(MNIST_DATA_DIR)/ -- see make download_mnist
 # =============================================================================
 
-MNIST_IMAGES      ?= 600
+MNIST_IMAGES      ?= 1200
 MNIST_TIMESTEPS   ?= 20
 MNIST_GRID        ?= 10
 MNIST_NEURONS     ?= 128
 MNIST_NUM_EXC     ?= 28
-MNIST_THRESHOLD   ?= 1200
+MNIST_CLUSTERS    ?= 4
+MNIST_THRESHOLD   ?= 1500
 MNIST_MAX_RATE    ?= 0.55
 MNIST_SEED        ?= 1
+ARCHIVE           = bash tools/run_and_archive.sh
 
 RTL_STDP = \
     $(RTL_DIR)/global_decay_timer.v \
@@ -205,8 +207,7 @@ mnist_build: dir
 	    $(RTL_STDP) $(TB_DIR)/tb_mnist_stdp.v
 
 mnist_run:
-	@echo "=== Running ==="
-	$(VVP) $(BUILD_DIR)/tb_mnist_stdp.vvp
+	@$(ARCHIVE) mnist_1cluster $(BUILD_DIR)/tb_mnist_stdp.vvp $(TB_DIR)/mnist_config.vh
 
 mnist: mnist_prepare mnist_build mnist_run
 
@@ -261,17 +262,19 @@ mnist_layered: dir
 	@cp $(TB_DIR)/mnist_spikes.hex $(TB_DIR)/mnist_labels.hex ./
 	$(IVERILOG) -g2005 -I $(TB_DIR) -o $(BUILD_DIR)/tb_mnist_layered.vvp \
 	    $(RTL_MULTI) $(TB_DIR)/tb_mnist_layered.v
-	$(VVP) $(BUILD_DIR)/tb_mnist_layered.vvp
+	@$(ARCHIVE) mnist_layered $(BUILD_DIR)/tb_mnist_layered.vvp $(TB_DIR)/mnist_config_layered.vh
 
 mnist_wide: dir
 	python3 tools/prepare_mnist_wide.py \
 	    --images $(MNIST_IMAGES) --timesteps $(MNIST_TIMESTEPS) \
-	    --num-clusters 4 --neurons-per-cluster 128 --base-threshold 1500 \
+	    --grid $(MNIST_GRID) --num-clusters $(MNIST_CLUSTERS) \
+	    --neurons-per-cluster $(MNIST_NEURONS) --base-threshold $(MNIST_THRESHOLD) \
+	    --max-rate $(MNIST_MAX_RATE) --seed $(MNIST_SEED) \
 	    --data-dir $(MNIST_DATA_DIR) --out-dir $(TB_DIR)
 	@cp $(TB_DIR)/mnist_spikes.hex $(TB_DIR)/mnist_labels.hex ./
 	$(IVERILOG) -g2005 -I $(TB_DIR) -o $(BUILD_DIR)/tb_mnist_wide.vvp \
 	    $(RTL_MULTI) $(TB_DIR)/tb_mnist_wide.v
-	$(VVP) $(BUILD_DIR)/tb_mnist_wide.vvp
+	@$(ARCHIVE) mnist_wide $(BUILD_DIR)/tb_mnist_wide.vvp $(TB_DIR)/mnist_config_wide.vh
 
 # =============================================================================
 # LEGACY MNIST inference test (superseded by 'make mnist')
@@ -386,3 +389,4 @@ wave_%:
 
 clean:
 	rm -rf $(BUILD_DIR) *.vcd *.hex
+	@echo "runs/ preserved - archived results are never deleted by clean" 

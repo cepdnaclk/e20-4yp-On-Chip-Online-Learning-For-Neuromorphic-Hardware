@@ -1,0 +1,9 @@
+run       : mnist_layered
+date      : 2026-08-25T08:20:48+05:30
+note      : archived retrospectively
+
+--- headline ---
+  output neurons that responded: 32 / 32
+  Correct         : 27
+  ACCURACY        : 11.25 %
+  Health: hidden spikes=38441  output spikes=7139

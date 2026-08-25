@@ -1,0 +1,9 @@
+run       : mnist_wide
+date      : 2026-08-25T10:44:44+05:30
+note      : archived retrospectively
+
+--- headline ---
+  neurons that responded: 87 / 112
+  Correct            : 100
+  ACCURACY           : 41.67 %
+  Health: excitatory spikes=66005  queue overflow=0  stdp timeout=0

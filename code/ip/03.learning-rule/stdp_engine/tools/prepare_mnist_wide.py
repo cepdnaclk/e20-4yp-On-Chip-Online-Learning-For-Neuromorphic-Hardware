@@ -48,10 +48,22 @@ def load_labels(path):
         return np.frombuffer(f.read(), dtype=np.uint8)
 
 
-def downsample_10(images):
-    crop = images[:, 4:24, 4:24]
-    n = crop.shape[0]
-    return crop.reshape(n, 10, 2, 10, 2).mean(axis=(2, 4))
+def downsample(images, grid):
+    """28x28 -> grid x grid.
+       grid=14 : 2x2 pool of the full frame
+       grid=10 : central 20x20 crop then 2x2 pool
+       grid=7  : 4x4 pool of the full frame"""
+    n = images.shape[0]
+    if grid == 14:
+        crop, factor = images, 2
+    elif grid == 10:
+        crop, factor = images[:, 4:24, 4:24], 2
+    elif grid == 7:
+        crop, factor = images, 4
+    else:
+        raise SystemExit(f"--grid must be 7, 10 or 14 (got {grid})")
+    size = crop.shape[1]
+    return crop.reshape(n, grid, factor, grid, factor).mean(axis=(2, 4))
 
 
 def main():
@@ -64,22 +76,27 @@ def main():
     ap.add_argument("--max-rate", type=float, default=0.55)
     ap.add_argument("--base-threshold", type=int, default=1500)
     ap.add_argument("--seed", type=int, default=1)
+    ap.add_argument("--grid", type=int, default=10, choices=[7, 10, 14])
     ap.add_argument("--num-clusters", type=int, default=4)
     ap.add_argument("--neurons-per-cluster", type=int, default=128)
     args = ap.parse_args()
 
-    GRID = 10
-    NUM_INPUT = GRID * GRID          # 100
-    N = args.neurons_per_cluster     # 128
+    GRID = args.grid
+    NUM_INPUT = GRID * GRID
+    N = args.neurons_per_cluster
     NUM_CLUSTERS = args.num_clusters
     TOTAL = NUM_CLUSTERS * N
 
     AXON_BASE = 0
-    NEURON_BASE = NUM_INPUT          # 100
-    NUM_EXC = N - NEURON_BASE        # 28
+    NEURON_BASE = NUM_INPUT
+    NUM_EXC = N - NEURON_BASE
 
     if NUM_EXC < 1:
-        raise SystemExit(f"{NUM_INPUT} axons leaves no room for neurons in {N}")
+        raise SystemExit(
+            f"{NUM_INPUT} inputs leaves no room for neurons in a {N}-slot cluster; "
+            f"raise --neurons-per-cluster to {1 << (NUM_INPUT).bit_length()}")
+    if N & (N - 1):
+        raise SystemExit(f"--neurons-per-cluster must be a power of 2 (got {N})")
 
     rng = np.random.default_rng(args.seed)
 
@@ -98,7 +115,7 @@ def main():
     if len(images) < args.images:
         raise SystemExit(f"only {len(images)} images available")
 
-    small = downsample_10(images).reshape(args.images, NUM_INPUT) / 255.0
+    small = downsample(images, GRID).reshape(args.images, NUM_INPUT) / 255.0
     rates = np.clip(small, 0.0, 1.0) * args.max_rate
 
     os.makedirs(args.out_dir, exist_ok=True)
@@ -139,6 +156,7 @@ localparam BASE_THRESHOLD          = {args.base_threshold};
 
     avg = total_spikes / (args.images * args.timesteps)
     print(f"  topology          : {NUM_CLUSTERS} clusters x {N} = {TOTAL} slots")
+    print(f"  resolution        : {GRID}x{GRID} = {NUM_INPUT} inputs")
     print(f"  per cluster       : {NUM_INPUT} axons (replicated) + {NUM_EXC} excitatory, WTA")
     print(f"  excitatory total  : {NUM_CLUSTERS*NUM_EXC}  (vs 28 single-cluster)")
     print(f"  plastic synapses  : {NUM_CLUSTERS*NUM_INPUT*NUM_EXC}")

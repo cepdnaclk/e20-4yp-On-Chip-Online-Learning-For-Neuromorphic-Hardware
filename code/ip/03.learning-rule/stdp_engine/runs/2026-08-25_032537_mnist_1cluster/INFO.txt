@@ -1,0 +1,9 @@
+run       : mnist_1cluster
+date      : 2026-08-25T03:25:37+05:30
+note      : archived retrospectively
+
+--- headline ---
+  neurons that responded: 23 / 28
+  Correct            : 71
+  ACCURACY           : 29.58 %
+  Health: excitatory spikes=16638  drain timeouts=0  queue overflow=0  stdp timeout=0

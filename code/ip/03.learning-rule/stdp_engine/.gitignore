@@ -12,3 +12,6 @@ build/
 *.vcd
 a.out
 out*.log
+
+# archived run outputs are kept, but not the bulky per-run spike data
+runs/**/*.hex

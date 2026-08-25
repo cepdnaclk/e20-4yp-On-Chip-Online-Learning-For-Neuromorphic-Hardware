@@ -1,318 +1,213 @@
-# STDP Engine — On-Chip Unsupervised Learning Cluster
+# STDP Engine — On-Chip Learning Neuromorphic Accelerator
 
-A single-cluster spiking neural network accelerator in Verilog that learns MNIST
-digits **on chip** with pair-based STDP, then classifies unseen digits. No
-backpropagation, no host-side training — the weights live in the RTL's banked
-SRAM and are updated by the hardware itself as spikes arrive.
+A spiking neural network in Verilog that **learns MNIST digits in the hardware
+itself** using STDP. No backpropagation, no training on a PC — the weights live
+in the RTL's SRAM and are updated by the chip as spikes arrive.
 
-```
-make mnist          # prepare data, build, train, infer, print accuracy
+```bash
+sudo pacman -S iverilog     # the only dependency
+make mnist                  # prepare data -> build -> train -> classify -> accuracy
 ```
 
 ---
 
-## 1. What the machine is
+## 1. The sizes, and how to change them
 
-One `neuron_cluster` of N neurons. Neurons are addressed 0..N-1 and any neuron
-can be pre-synaptic, post-synaptic, or both — the `cluster_connection_matrix`
-decides. For the MNIST demo the cluster is partitioned:
+Everything about the network's shape is set **on the command line**. You never
+edit RTL and you never edit a testbench.
 
-```
-N = 128 neurons
-
-  neuron   0 ..  99   INPUT layer       10x10 downsampled MNIST,
-                                        Poisson rate-coded, driven from
-                                        external_spike_input_bus
-  neuron 100 .. 127   EXCITATORY layer  28 neurons, winner-take-all,
-                                        weights trained by STDP
+```bash
+make mnist_wide MNIST_IMAGES=1200 MNIST_GRID=10 MNIST_CLUSTERS=4 MNIST_NEURONS=128
 ```
 
-Connectivity is all-to-all input→excitatory (2 800 plastic synapses):
+The prepare step writes `tb/mnist_config*.vh`, the testbench `` `include ``s it,
+and address widths, bank counts, WTA ranges and the connection matrix all
+follow automatically.
 
-| Table entry | Meaning | Consumed when |
+| Variable | Default | What it changes |
 |---|---|---|
-| `input_connection_rows[e][i] = 1` | `i` is PRE-synaptic to `e` | `e` fires → LTP/LTD on W(i→e) |
-| `output_connection_rows[i][e] = 1` | `i` drives `e` | `i` fires → W(i→e) sent to `e` |
+| `MNIST_IMAGES` | 1200 | total pictures, split 60 % train / 20 % assign / 20 % test |
+| `MNIST_GRID` | 10 | image resolution: 7, 10 or 14 → 49, 100 or 196 inputs |
+| `MNIST_NEURONS` | 128 | slots per cluster — **must be a power of 2** |
+| `MNIST_CLUSTERS` | 4 | how many clusters (wide topology) |
+| `MNIST_TIMESTEPS` | 20 | how long each picture is shown |
+| `MNIST_THRESHOLD` | 1500 | how easily a neuron fires |
+| `MNIST_MAX_RATE` | 0.55 | firing rate of a fully-white pixel |
+| `MNIST_SEED` | 1 | randomness for encoding and initial weights |
 
----
+### The one rule that governs everything
 
-## 2. Where the weights live
-
-All synaptic weights are 8-bit unsigned, held in `banked_weight_memory` as
-N independent SRAM banks:
-
-```
-W(pre = p, post = t)   lives at   bank_memory[(t + p) mod N][t]
-```
-
-This skewed layout is what makes both access patterns single-cycle:
-
-* **Row read** at address `f` returns `bank_memory[b][f]` for *every* bank at
-  once — i.e. all **incoming** weights of neuron `f`, one per bank. This is the
-  learning path: one read gives the whole weight vector to update.
-* **Column read** with `step = t` returns the single weight from the fired
-  neuron `f` to target `t`. This is the inference path: one weight per cycle
-  onto the distribution bus.
-
-`stdp_controller` de-skews bank order back to neuron order with
-`store[(bank - f) mod N]` before applying the update.
-
-Traces live separately in `trace_memory`: one 21-bit entry per neuron
-`{saturated_flag, timestamp[11:0], value[7:0]}`, async read, sync write.
-
----
-
-## 3. How a spike flows
-
-Everything is driven by one **transaction per spiking neuron**, serialised by
-`spike_input_queue`.
+**Inside a cluster, inputs and neurons share the same pockets.**
 
 ```
-external_spike_input_bus ─┐
-                          ├─► spike_input_queue ─► stdp_controller
-neuron spike outputs ─────┘        (one address per transaction)
+inputs + neurons  ≤  MNIST_NEURONS        (and MNIST_NEURONS is a power of 2)
+inputs = MNIST_GRID x MNIST_GRID
 ```
 
-`stdp_controller` FSM: `IDLE → SETUP → SCAN → WAIT → WRITE`
+So a 128-pocket cluster holding 100 inputs has 28 pockets left for neurons.
+Want more neurons? Either add clusters, or move to a bigger cluster.
 
-| State | What happens |
-|---|---|
-| `IDLE`  | accept a queued address `f`, present it to the connection matrix and trace memory |
-| `SETUP` | latch `f`'s connectivity, flatten both vectors into index lists, issue INCREASE on trace[f], issue the row read of all incoming weights |
-| `SCAN`  | **A)** one column read per connected output → weight distribution bus. **B)** one pre-synaptic trace read + DECAY_COMPUTE per connected input. Both run in parallel, one entry per cycle |
-| `WAIT`  | block until every trace result has returned and the row read landed |
-| `WRITE` | write all updated weights back in one cycle, masked to connected banks |
-
-### Inference path (A)
-`column read → weight_distribution_bus → weight_distribution_receiver[t] →
-stdp_lif_neuron[t].input_spike`. The receiver emits a one-cycle pulse carrying
-the weight; the LIF neuron integrates it into its membrane.
-
-### Learning path (B)
-`trace_memory[i] → trace_update_arbiter → trace_update_module (DECAY_COMPUTE)`
-gives the *effective* pre-synaptic trace now. Traces use **lazy decay**: a trace
-stores `(value, timestamp)` and its present value is `value >> (now - timestamp)`,
-computed only when read. `weight_update_logic_bank_array` then applies, per bank,
-in parallel:
-
-```
-pre_trace > 0   →  LTP :  w += pre_trace  >> LTP_SHIFT_AMOUNT    (max +31)
-pre_trace == 0  →  LTD :  w -= post_trace >> LTD_SHIFT_AMOUNT    (max -15)
-```
-
-The pre-synaptic trace halves on every decay tick, and the testbench issues
-`DECAY_TICKS_PER_STEP = 4` ticks per timestep. That sets the STDP causal window:
-a pre-spike is worth +31 in its own timestep, +1 one timestep later, and nothing
-after — so only inputs that fired *just before* the post-synaptic spike are
-potentiated. Everything else is depressed. That difference is the learning.
-
----
-
-## 4. Why there is a winner-take-all
-
-Every excitatory neuron sees the same inputs and the same STDP rule, so without
-competition they all converge on one identical receptive field and the layer
-cannot discriminate anything.
-
-`lateral_inhibition_wta` arbitrates **combinationally, in the same cycle a
-neuron would fire**: neurons raise `fire_request` at threshold, and exactly one
-grant is issued — to the requester with the **highest membrane potential**, i.e.
-the neuron whose learned weights best match the current input. Every other
-requester is inhibited (membrane wiped, forced refractory). Ties are broken by a
-priority origin that rotates after each grant, so no fixed index bias can
-collapse the layer onto one neuron.
-
-Arbitration *must* be combinational: the cluster freezes firing while the spike
-queue drains, so many neurons sit above threshold at once and would otherwise
-all fire on the cycle the freeze lifts.
-
-`stdp_lif_neuron` also carries an **adaptive threshold** (`theta`): +`THETA_INCREMENT`
-on every spike, decaying by `theta >> THETA_DECAY_SHIFT` per tick. This is the
-homeostasis that stops a strong neuron monopolising the layer and forces the
-rest to specialise. It keeps running during inference — only *weight* learning
-is frozen there.
-
----
-
-## 5. Training and classification
-
-Three phases, all in `tb/tb_mnist_stdp.v`:
-
-1. **TRAIN** — `learning_enable = 1`. Purely unsupervised: labels are never
-   shown to the hardware. STDP + WTA + homeostasis shape the receptive fields.
-2. **ASSIGN** — `learning_enable = 0`. Each excitatory neuron is labelled with
-   the digit that produces its highest *mean* response.
-3. **TEST** — predict `argmax` over per-class mean firing rate of the neurons
-   assigned to each class.
-
-The testbench prints overall accuracy, per-digit accuracy, a confusion matrix,
-and dumps learned receptive fields as ASCII art read straight back out of
-`bank_memory`.
-
----
-
-## 6. Measured results
-
-`make mnist MNIST_IMAGES=1200` (720 train / 240 assign / 240 test, 28 excitatory
-neurons, 10x10 input, 20 timesteps per image), Icarus Verilog 13.0:
-
-```
-  Test images        : 240
-  Correct            : 71
-  ACCURACY           : 29.58 %
-  Random baseline    : 10.00 %
-
-  digit 0 :  23 /  24   (95.8%)      digit 5 :   4 /  16   (25.0%)
-  digit 1 :  20 /  31   (64.5%)      digit 6 :   0 /  21   ( 0.0%)
-  digit 2 :   0 /  21   ( 0.0%)      digit 7 :  11 /  32   (34.4%)
-  digit 3 :   1 /  23   ( 4.3%)      digit 8 :  10 /  20   (50.0%)
-  digit 4 :   2 /  29   ( 6.9%)      digit 9 :   0 /  23   ( 0.0%)
-
-  23 / 28 neurons responded
-  neurons per digit: 0:4  1:5  2:0  3:3  4:4  5:2  6:0  7:3  8:2  9:0
-  drain timeouts=0  queue overflow=0  stdp timeout=0
-```
-
-Learned receptive fields, read straight back out of `bank_memory` after
-training — these are the actual 8-bit weights, not a simulation of them:
-
-```
-    neuron 102  (label 1)          neuron 101  (label 7)
-                                                 '
-                  ####++                         ####'
-                  ####                       ##########
-                ####                         ##    ##
-              ..##..                       ++..' ++##
-              ####                         ##..####'
-            ' ####                         ..####..'
-            ####                           ######'
-          ####                           ..####
-          ####                           ##
-```
-
-Runtime: ~1.4 s per image (~10 500 simulated cycles per image), so the run
-above takes about 35 minutes.
-
-### Reading these numbers
-Learning clearly works: digits 0, 1, 8 and 7 are recognised well and the
-receptive fields are digit-shaped. The ceiling is **class coverage** — with 28
-excitatory neurons, digits 2, 6 and 9 ended up with no assigned neuron at all
-and therefore score 0 %, which alone caps accuracy near 70 %.
-
-The two levers that matter most, in order:
-
-1. **More excitatory neurons.** 28 is thin for 10 classes. Diehl & Cook (2015),
-   the algorithm this implements, uses 100 neurons for ~82 % and 400 for ~87 %.
-   Going past 28 needs a 256-neuron cluster
-   (`MNIST_NEURONS=256 MNIST_NUM_EXC=100`, `MNIST_GRID=14` for 196 inputs),
-   which is roughly 4x the simulation cost per image.
-2. **More training images.** 720 is very few — accuracy rose from 17.5 % at 120
-   training images to 29.6 % at 720 with everything else identical.
-
-Both cost only simulation time; no RTL changes are required.
-
----
-
-## 7. Running it
-
-```bash
-make mnist                          # full pipeline, default 600 images
-make mnist MNIST_IMAGES=1500        # more data, better accuracy, longer sim
-make mnist_prepare                  # regenerate hex files only
-make mnist_build                    # compile only
-make mnist_run                      # re-run without recompiling
-```
-
-Split is 60 % train / 20 % assign / 20 % test.
-
-Useful knobs (all `make` variables): `MNIST_IMAGES`, `MNIST_TIMESTEPS`,
-`MNIST_GRID` (7/10/14), `MNIST_NEURONS`, `MNIST_NUM_EXC`, `MNIST_THRESHOLD`,
-`MNIST_MAX_RATE`, `MNIST_SEED`. STDP/neuron constants
-(`LTP_SHIFT_AMOUNT`, `LTD_SHIFT_AMOUNT`, `THETA_INCREMENT`,
-`DECAY_TICKS_PER_STEP`, …) are parameters at the top of `tb/tb_mnist_stdp.v`.
-
-**Prerequisite:** `iverilog`. On Arch: `sudo pacman -S iverilog`.
-MNIST IDX files are expected in `data/mnist/` (`make download_mnist` fetches them).
-
-### Diagnostics
-The cluster exposes `queue_overflow_flag` and `transaction_timeout_flag`, and
-the testbench reports drain timeouts. All three should be 0 / clean; a non-zero
-value means the pipeline stalled rather than merely performing poorly.
-
----
-
-## 8. Module map
-
-| File | Role |
-|---|---|
-| `rtl/neuron_cluster.v` | top level: wires everything together |
-| `rtl/stdp_controller.v` | the transaction FSM — the heart of the design |
-| `rtl/banked_weight_memory.v` | N-bank weight SRAM, row/column/masked-write ports |
-| `rtl/cluster_connection_matrix.v` | who is connected to whom (combinational read) |
-| `rtl/trace_memory.v` | one lazy-decay trace entry per neuron |
-| `rtl/trace_update_module.v` | INCREASE / DECAY_COMPUTE, 2-cycle latency |
-| `rtl/trace_update_arbiter.v` | pool of trace units + tagged result FIFO |
-| `rtl/weight_update_logic.v` | the STDP rule itself (swappable) |
-| `rtl/weight_update_logic_bank_array.v` | N parallel copies, one per bank |
-| `rtl/lif_neuron.v` | LIF neuron: leak, refractory, adaptive threshold |
-| `rtl/lateral_inhibition.v` | combinational max-membrane WTA arbiter |
-| `rtl/spike_input_queue.v` | edge-triggered spike FIFO + cluster freeze |
-| `rtl/global_decay_timer.v` | global tick counter for lazy trace decay |
-| `tools/prepare_mnist_stdp.py` | rate-codes MNIST, emits hex + `mnist_config.vh` |
-| `tb/tb_mnist_stdp.v` | train / assign / test harness and reporting |
-
-`DIAGNOSIS.md` records the defects found in the original design and why each
-mattered.
-
----
-
-## 9. Multi-cluster
-
-`rtl/neuron_cluster_array.v` instantiates `NUM_CLUSTERS` clusters plus one
-`rtl/spike_router.v`. Total neurons = `NUM_CLUSTERS * NUM_NEURONS_PER_CLUSTER`;
-32 x 32 = 1024 is verified.
-
-```bash
-make multi_cluster                    # 4 clusters x 32 =  128 neurons
-make multi_cluster MC_CLUSTERS=32     # 32 clusters x 32 = 1024 neurons
-make multi_cluster_all                # sweep 2, 4, 8, 32
-```
-
-Only 1-bit spike events cross a cluster boundary. Weights, traces and crossbar
-state stay inside the cluster owning the post-synaptic neuron, so nothing is
-shared or coherent between clusters — the TrueNorth partitioning.
-
-`neuron_cluster` is unchanged: its `external_spike_input_bus` already acts as an
-axon injection port, so "a remote neuron fired" is delivered by pulsing the
-axon slot representing it. The router holds a table per global neuron
-(`route_valid`, `route_dest_cluster_mask`, `route_dest_axon`) and serialises
-simultaneous spikes through a FIFO, one delivery per clock.
-
-`tb/tb_multi_cluster.v` verifies cross-cluster propagation, routing isolation,
-serialisation, and **cross-cluster STDP** (LTP on the routed synapse, LTD on a
-silent one): 73/73 pass at 1024 neurons. Requires `NUM_CLUSTERS >= 2`.
-
-Limits: WTA is per cluster (no global WTA); a routing entry fans out to the
-same axon index in every destination cluster; fan-in per neuron is bounded by
-`NUM_NEURONS_PER_CLUSTER`; and the MNIST demo is still single-cluster.
-
----
-
-## 10. Topology comparison
-
-All 1200 images (720 train / 240 assign / 240 test), identical STDP constants
-and seed:
-
-| Topology | Excitatory | Hidden | Accuracy | Target |
+| Resolution | Inputs | Cluster size | Neurons left | Simulation cost |
 |---|---|---|---|---|
-| 1 cluster x 128 | 28 | 0 | 29.58 % | `make mnist` |
-| **4 clusters x 128 (wide)** | **112** | **0** | **41.67 %** | `make mnist_wide` |
-| 5 clusters x 64 (layered) | 32 | 32 | 11.25 % | `make mnist_layered` |
-| random chance | — | — | 10.00 % | — |
+| 7×7 | 49 | 64 | 15 | very fast |
+| 10×10 | 100 | 128 | 28 | ~35 min / 1200 images / cluster |
+| 14×14 | 196 | 256 | 60 | ~4× slower |
+| 28×28 (full MNIST) | 784 | 1024 | 240 | fits, but weeks in simulation |
 
-Width beats depth on this hardware. The wide topology lifts digits with at
-least one assigned neuron from 7/10 to 9/10 and responding neurons from 23/28
-to 87/112. The layered topology is the only one with real intermediate
-neurons and the only one that drives the router with a real workload; it runs
-correctly but classifies near chance, because WTA at layer 1 compresses the
-image to ~12 bits per timestep and layer 2 cannot recover the loss.
+Full-resolution MNIST **fits the design** — 784 + 240 = 1024. It is only
+simulation speed that stops us running it; on a real FPGA or chip it is fine.
+
+The script refuses invalid shapes rather than building something broken:
+
+```
+196 inputs + 50 excitatory > 128 neurons
+```
+
+Learning-rule constants (`LTP_SHIFT_AMOUNT`, `LTD_SHIFT_AMOUNT`,
+`THETA_INCREMENT`, `DECAY_TICKS_PER_STEP`, `WTA_INHIBIT_CYCLES`) are parameters
+at the top of the testbench in `tb/`. Those you edit by hand.
+
+---
+
+## 2. Commands
+
+| Command | What it does |
+|---|---|
+| `make mnist` | single cluster, 100 inputs, 28 neurons — the baseline |
+| `make mnist_wide` | **best result** — 4 clusters, 112 neurons |
+| `make mnist_layered` | two layers with real hidden neurons |
+| `make multi_cluster` | directed multi-cluster hardware test (4 clusters) |
+| `make multi_cluster MC_CLUSTERS=32` | same test at 32 clusters = 1024 neurons |
+| `make multi_cluster_all` | sweep 2, 4, 8, 32 clusters |
+| `make test_all` | per-module unit tests |
+| `make download_mnist` | fetch the MNIST data files |
+| `make clean` | remove build artefacts |
+
+Split each `make mnist*` into stages if you want:
+`make mnist_prepare` (data only), `make mnist_build` (compile only),
+`make mnist_run` (re-run without recompiling).
+
+Every full run is archived automatically — see §5.
+
+---
+
+## 3. Results so far
+
+All 1200 images, identical learning constants and seed:
+
+| Topology | Inputs | Hidden | Output neurons | Accuracy |
+|---|---|---|---|---|
+| 1 cluster × 128 | 100 | 0 | 28 | 29.58 % |
+| **4 clusters × 128 (wide)** | **100** | **0** | **112** | **41.67 %** |
+| 5 clusters × 64 (layered) | 100 | 32 | 32 | 11.25 % |
+| random guessing | — | — | — | 10.00 % |
+
+**Width beats depth on this hardware.** Going from 28 to 112 neurons lifted the
+digits that had at least one neuron assigned from 7/10 to 9/10, and responding
+neurons from 23/28 to 87/112.
+
+The layered version is the only one with real hidden neurons and the only one
+that uses the inter-cluster router for a real workload. It runs correctly —
+no overflow, no timeouts, and layer 1 learns clean stroke fragments — but
+classifies near chance, because winner-take-all at layer 1 squeezes the whole
+image down to about 12 bits per timestep and layer 2 cannot recover the loss.
+
+---
+
+## 4. How it is arranged
+
+### The wide topology (the one that works best)
+
+Four **identical copies**, not one network cut into pieces. Every cluster sees
+the same 100 inputs and forms its own opinion with its own 28 neurons. At the
+end all 112 neurons vote. Like four people looking at the same photo and
+voting, rather than four people each seeing a quarter of it.
+
+```
+per cluster:  pockets   0..99   = the 100 image inputs (same in every cluster)
+              pockets 100..127  = 28 neurons, competing with each other
+```
+
+### Inside one cluster
+
+```
+spike -> spike_input_queue -> stdp_controller
+                                |- column reads -> distribution bus -> neurons   (RECOGNISING)
+                                |- trace reads  -> weight update    -> SRAM      (LEARNING)
+```
+
+Weights are stored as `W(from, to)` at `bank_memory[(to + from) mod N][to]`.
+That layout lets the chip read *all* of a neuron's incoming weights in one go
+(for learning) and one outgoing weight per cycle (for recognising).
+
+### Between clusters
+
+Only 1-bit spike events cross a cluster boundary — never weights. A routing
+table says which cluster(s) and which input pocket each neuron's spike goes to.
+Tested up to 32 clusters × 32 neurons = 1024 neurons.
+
+### Neuron types
+
+There is **one** neuron module, `rtl/lif_neuron.v`. Input pockets and output
+neurons are the same hardware; the difference is only what is wired to them.
+There are **no inhibitory neurons** — competition is done by an arbiter
+(`rtl/lateral_inhibition.v`), and weights are unsigned so nothing is negative.
+
+---
+
+## 5. Run history
+
+Every run is archived under `runs/` with a date and time stamp:
+
+```
+runs/2026-08-25_104444_mnist_wide/
+    INFO.txt    date, git commit, duration, headline accuracy
+    run.log     complete simulation output
+    *.vh        the exact configuration that run used
+```
+
+Nothing is overwritten, so you can always go back and compare. To archive a run
+by hand:
+
+```bash
+tools/run_and_archive.sh <name> build/<file>.vvp tb/mnist_config.vh
+```
+
+---
+
+## 6. Reading the output
+
+```
+ACCURACY : 41.67 %      100 of 240 test images
+Health   : queue overflow=0  stdp timeout=0  router overflow=0
+```
+
+The health line must be all zeros. Anything else means the pipeline stalled —
+a real fault, not just a poor score.
+
+| Symptom | Meaning |
+|---|---|
+| `excitatory spikes: 0` | nothing fired — lower `MNIST_THRESHOLD` or raise `MNIST_MAX_RATE` |
+| `drain timeouts > 0` | a transaction never finished |
+| `queue overflow = 1` | too many spikes at once |
+| receptive fields all `####` | weights saturated — learning is unbalanced |
+| receptive fields unchanged | those neurons never won the competition |
+
+---
+
+## 7. Files
+
+| Path | What it is |
+|---|---|
+| `rtl/` | the hardware |
+| `tb/` | testbenches |
+| `tools/` | data preparation and the run archiver |
+| `runs/` | every past run, timestamped |
+| `data/mnist/` | MNIST source data |
+| `legacy/` | superseded files, kept for reference only |
+| `DIAGNOSIS.md` | every defect found in the original design, with evidence |
+
+Key modules: `neuron_cluster.v` (one cluster), `stdp_controller.v` (the FSM that
+does the work), `banked_weight_memory.v` (the weights), `lif_neuron.v` (the
+neuron), `lateral_inhibition.v` (the competition), `spike_router.v` and
+`neuron_cluster_array.v` (many clusters).
