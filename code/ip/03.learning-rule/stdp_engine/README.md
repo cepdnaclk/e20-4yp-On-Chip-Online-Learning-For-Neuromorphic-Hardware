@@ -295,3 +295,24 @@ silent one): 73/73 pass at 1024 neurons. Requires `NUM_CLUSTERS >= 2`.
 Limits: WTA is per cluster (no global WTA); a routing entry fans out to the
 same axon index in every destination cluster; fan-in per neuron is bounded by
 `NUM_NEURONS_PER_CLUSTER`; and the MNIST demo is still single-cluster.
+
+---
+
+## 10. Topology comparison
+
+All 1200 images (720 train / 240 assign / 240 test), identical STDP constants
+and seed:
+
+| Topology | Excitatory | Hidden | Accuracy | Target |
+|---|---|---|---|---|
+| 1 cluster x 128 | 28 | 0 | 29.58 % | `make mnist` |
+| **4 clusters x 128 (wide)** | **112** | **0** | **41.67 %** | `make mnist_wide` |
+| 5 clusters x 64 (layered) | 32 | 32 | 11.25 % | `make mnist_layered` |
+| random chance | — | — | 10.00 % | — |
+
+Width beats depth on this hardware. The wide topology lifts digits with at
+least one assigned neuron from 7/10 to 9/10 and responding neurons from 23/28
+to 87/112. The layered topology is the only one with real intermediate
+neurons and the only one that drives the router with a real workload; it runs
+correctly but classifies near chance, because WTA at layer 1 compresses the
+image to ~12 bits per timestep and layer 2 cannot recover the loss.

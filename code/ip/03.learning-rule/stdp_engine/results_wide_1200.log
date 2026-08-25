@@ -1,0 +1,117 @@
+================================================================
+  WIDE MULTI-CLUSTER SNN  -  MNIST
+----------------------------------------------------------------
+  clusters        : 4 x 128 neurons = 512 slots
+  per cluster     : 100 axons (same input) + 28 excitatory, WTA
+  excitatory total: 112   (single-cluster run had 28)
+  hidden layer    : none - one plastic layer
+  plastic synapses: 11200
+  images          : 720 train / 240 assign / 240 test
+================================================================
+
+--- Phase 1: unsupervised STDP training (720 images) ---
+  [train]  100 / 720   excitatory spikes: 4238
+  [train]  200 / 720   excitatory spikes: 9425
+  [train]  300 / 720   excitatory spikes: 14764
+  [train]  400 / 720   excitatory spikes: 20313
+  [train]  500 / 720   excitatory spikes: 25621
+  [train]  600 / 720   excitatory spikes: 31131
+  [train]  700 / 720   excitatory spikes: 36858
+  training done. excitatory spikes: 38084
+
+--- Phase 2: label assignment (240 images) ---
+  neurons that responded: 87 / 112
+  neurons per digit :  0:18  1:20  2:3  3:11  4:13  5:0  6:3  7:4  8:7  9:8
+
+--- Learned receptive fields (one per cluster) ---
+    cluster 0 neuron 0 (label 4, mean weight 75)
+                '         
+          ' ' ####'   ..' 
+        ' ++##' ++++'     
+        ++##'       ..'   
+        ##..' '   ..##    
+      ' ' ##++####..  ##  
+          ##' ##  '   ++' 
+              '     ####++
+              ++' ####    
+            ' ####        
+    cluster 1 neuron 0 (label 0, mean weight 71)
+              ++  ..'     
+          ' ####' ..++' ' 
+          ####..++  ....  
+        '   ' '           
+        ##..      ..++++' 
+      '   ....    ....  ..
+      ' ' ####..  ..####  
+      '   ++        ' ..++
+        ++##  ....++..'   
+          ....' ....'     
+    cluster 2 neuron 0 (label -1, mean weight 60)
+      ' ' ' ' ' ' ' ' ' ' 
+      ' ' ..' ' ' ' ' ..' 
+      ' ' ' ' ' ' ....' ' 
+      ' ' ' ..' ' ' ' ' ' 
+      ' ' ' ' ' ..' ..' ' 
+      ' ' ' ' ' ' ' ' ' ' 
+      ' ' ' ' ....' ' ' ' 
+      ' ' ' ' ..' ' ..' ' 
+      ' ..' ..' ' ' ' ' ..
+      ' ' ' ..' ' ' ' ' ' 
+    cluster 3 neuron 0 (label -1, mean weight 60)
+      ' ..' ' ' ' ' ' ' ' 
+      ' ' ' ' ' ' ' ' ..' 
+      ..' ..' ' ' ..' ..' 
+      ..' ' ' ' ' ' ..' ' 
+      ' ' ' ' ' ..' ..' ' 
+      ' ....' ' ..' ..' ' 
+      ' ' ' ' ' ' ' ' ' ' 
+      ..' ..' ' ' ' ' ' ' 
+      ' ' ' ' ' ' ' ' ' ' 
+      ' ' ' ' ' ' ' ' ' ' 
+
+--- Phase 3: inference (240 images) ---
+  [test]   40 / 240   correct: 14   accuracy: 35.0%
+  [test]   80 / 240   correct: 33   accuracy: 41.2%
+  [test]  120 / 240   correct: 53   accuracy: 44.2%
+  [test]  160 / 240   correct: 70   accuracy: 43.8%
+  [test]  200 / 240   correct: 86   accuracy: 43.0%
+  [test]  240 / 240   correct: 100   accuracy: 41.7%
+
+================================================================
+  WIDE MULTI-CLUSTER RESULTS
+----------------------------------------------------------------
+  Excitatory neurons : 112  (4 clusters x 28)
+  Test images        : 240
+  Correct            : 100
+  ACCURACY           : 41.67 %
+  Random baseline    : 10.00 %
+  Single-cluster ref : 29.58 % (28 neurons, 1200 images)
+
+  Per-digit accuracy:
+    digit 0 :  22 /  24  (91.7%)
+    digit 1 :  23 /  31  (74.2%)
+    digit 2 :  13 /  21  (61.9%)
+    digit 3 :  13 /  23  (56.5%)
+    digit 4 :   0 /  29  (0.0%)
+    digit 5 :   0 /  16  (0.0%)
+    digit 6 :   4 /  21  (19.0%)
+    digit 7 :  11 /  32  (34.4%)
+    digit 8 :   9 /  20  (45.0%)
+    digit 9 :   5 /  23  (21.7%)
+
+  Confusion matrix (rows = true, cols = predicted):
+           0   1   2   3   4   5   6   7   8   9
+    0 :   22   0   0   1   0   0   1   0   0   0
+    1 :    0  23   5   2   0   0   0   0   1   0
+    2 :    0   0  13   1   0   0   2   0   5   0
+    3 :    2   0   4  13   0   0   0   0   4   0
+    4 :    1   1   8   4   0   0   6   2   1   6
+    5 :    2   0   2   6   0   0   1   0   5   0
+    6 :    2   0  10   2   0   0   4   1   2   0
+    7 :    3   0   3   0   0   0   4  11  11   0
+    8 :    0   0   5   3   0   0   2   1   9   0
+    9 :    0   0   4   1   0   0   4   3   6   5
+
+  Health: excitatory spikes=66005  queue overflow=0  stdp timeout=0
+================================================================
+tb/tb_mnist_wide.v:400: $finish called at 134268527000 (1ps)

@@ -256,7 +256,83 @@ STDP measured in cluster 1: `W(routed axon -> neuron) 250 -> 255` (LTP),
 
 ---
 
-## 5. What you get back
+## 5. Topology comparison — measured
+
+Three topologies, all 1200 images (720 train / 240 assign / 240 test),
+identical STDP constants, identical seed:
+
+| | Topology | Excitatory | Hidden | Accuracy |
+|---|---|---|---|---|
+| baseline | 1 cluster x 128 | 28 | 0 | 29.58 % |
+| **A wide** | **4 clusters x 128** | **112** | **0** | **41.67 %** |
+| B layered | 5 clusters x 64 | 32 out | 32 | 11.25 % |
+| — | random chance | — | — | 10.00 % |
+
+```bash
+make mnist          MNIST_IMAGES=1200   # baseline, 1 cluster
+make mnist_wide     MNIST_IMAGES=1200   # A
+make mnist_layered  MNIST_IMAGES=1200   # B
+```
+
+### A — wide (4 clusters x 128), 41.67 %
+
+```
+per cluster: axons 0..99   = the same 100 pixels
+             neurons 100..127 = 28 excitatory, own WTA
+-> 112 excitatory neurons, 11,200 plastic synapses, no hidden layer
+```
+
+Capacity was the binding constraint, and adding it worked:
+
+| | baseline (28) | A (112) |
+|---|---|---|
+| Neurons that responded | 23 / 28 | 87 / 112 |
+| Digits with at least one neuron | 7 / 10 | **9 / 10** |
+| Accuracy | 29.58 % | **41.67 %** |
+
+Per-digit: 0 → 91.7 %, 1 → 74.2 %, 2 → 61.9 %, 3 → 56.5 %, 8 → 45.0 %,
+7 → 34.4 %, 9 → 21.7 %, 6 → 19.0 %, 4 → 0 %, 5 → 0 %.
+
+Digit 5 still gets no neuron. Digit 4 is the interesting failure: it *has*
+13 assigned neurons but still scores 0 %, meaning those neurons fire on 4s
+without firing *more* than the neurons of competing classes — the per-class
+mean-rate vote loses. That is a readout weakness, not a synapse weakness.
+
+The router is not used in A: all four clusters receive the same externally
+injected pixel spikes, so this is four competing populations rather than one
+112-way WTA.
+
+### B — layered (5 clusters x 64), 11.25 %
+
+```
+L1: 4 clusters, axons 0..24 = one 5x5 image quadrant, 8 excitatory each
+                                                        -> 32 hidden neurons
+L2: 1 cluster,  axons 0..31 = one per hidden neuron (via spike_router)
+                neurons 32..63 = 32 output neurons
+```
+
+This is the only topology with real intermediate neurons, and the only one
+that drives the router with a real workload. It works mechanically — 32/32
+output neurons respond, no queue overflow, no STDP timeout, no router
+overflow, and layer 1 learns clean stroke fragments per quadrant — but it
+classifies barely above chance.
+
+**Why B fails: an information bottleneck at layer 1.** WTA lets roughly one
+of the 8 neurons in each L1 cluster fire per timestep, so the entire image is
+compressed to "which of 8 won, in each of 4 quadrants" — about 12 bits per
+timestep. Layer 2 cannot recover what layer 1 discarded, and unsupervised
+STDP gives layer 1 no objective tying its features to class discriminability.
+
+Fixing it needs far more hidden neurons per quadrant. With N=64 a cluster has
+only 32 neuron slots, and L2 can accept only 32 axons, so 32 hidden is the
+ceiling for this shape. A serious attempt needs N=256 (128 axons + 128
+neurons per cluster), which costs roughly 8x the simulation time.
+
+**Practical conclusion: on this hardware, spend neurons on width, not depth.**
+
+---
+
+## 6. What you get back
 
 ```
 ACCURACY : 29.58 %   (71/240)        random baseline 10.00 %
@@ -290,7 +366,7 @@ be 0. Non-zero means the pipeline stalled — a real bug, not just poor accuracy
 
 ---
 
-## 6. Limitations
+## 7. Limitations
 
 ### Hard limits (RTL changes required)
 
@@ -355,7 +431,7 @@ Two levers, in order of impact, **neither needing RTL changes**:
 
 ---
 
-## 7. If something looks wrong
+## 8. If something looks wrong
 
 | Symptom | Meaning |
 |---|---|
