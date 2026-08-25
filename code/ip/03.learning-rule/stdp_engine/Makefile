@@ -243,6 +243,36 @@ multi_cluster_all: dir
 	    $(VVP) $(BUILD_DIR)/tb_mc_$$n.vvp | tail -4 || exit 1; \
 	done
 
+
+# =============================================================================
+# LAYERED / WIDE multi-cluster MNIST topologies
+# =============================================================================
+#   make mnist_layered            # B: 5 clusters x 64, 32 hidden + 32 output
+#   make mnist_wide               # A: 4 clusters x 128, 112 output, no hidden
+# Override image count with MNIST_IMAGES.
+# =============================================================================
+
+.PHONY: mnist_layered mnist_wide
+
+mnist_layered: dir
+	python3 tools/prepare_mnist_layered.py \
+	    --images $(MNIST_IMAGES) --timesteps $(MNIST_TIMESTEPS) \
+	    --base-threshold 400 --data-dir $(MNIST_DATA_DIR) --out-dir $(TB_DIR)
+	@cp $(TB_DIR)/mnist_spikes.hex $(TB_DIR)/mnist_labels.hex ./
+	$(IVERILOG) -g2005 -I $(TB_DIR) -o $(BUILD_DIR)/tb_mnist_layered.vvp \
+	    $(RTL_MULTI) $(TB_DIR)/tb_mnist_layered.v
+	$(VVP) $(BUILD_DIR)/tb_mnist_layered.vvp
+
+mnist_wide: dir
+	python3 tools/prepare_mnist_wide.py \
+	    --images $(MNIST_IMAGES) --timesteps $(MNIST_TIMESTEPS) \
+	    --num-clusters 4 --neurons-per-cluster 128 --base-threshold 1500 \
+	    --data-dir $(MNIST_DATA_DIR) --out-dir $(TB_DIR)
+	@cp $(TB_DIR)/mnist_spikes.hex $(TB_DIR)/mnist_labels.hex ./
+	$(IVERILOG) -g2005 -I $(TB_DIR) -o $(BUILD_DIR)/tb_mnist_wide.vvp \
+	    $(RTL_MULTI) $(TB_DIR)/tb_mnist_wide.v
+	$(VVP) $(BUILD_DIR)/tb_mnist_wide.vvp
+
 # =============================================================================
 # LEGACY MNIST inference test (superseded by 'make mnist')
 # =============================================================================

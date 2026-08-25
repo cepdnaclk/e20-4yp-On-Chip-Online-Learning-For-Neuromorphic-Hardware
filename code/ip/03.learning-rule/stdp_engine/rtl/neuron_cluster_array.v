@@ -63,6 +63,18 @@ module neuron_cluster_array #(
     parameter THETA_INCREMENT              = 1200,
     parameter THETA_DECAY_SHIFT            = 7,
 
+    // Per-layer excitability override.
+    //
+    // Clusters with index >= CLUSTER_SPLIT_INDEX use the _UPPER values. A
+    // deeper layer sees far sparser input than the layer feeding it -- in the
+    // two-layer MNIST topology layer 1 receives ~3.3 spikes/timestep while
+    // layer 2 receives ~1.5 -- so a single array-wide threshold either starves
+    // the deeper layer or saturates the shallower one. Default leaves the
+    // split off (index == NUM_CLUSTERS), so every cluster uses the base values.
+    parameter CLUSTER_SPLIT_INDEX          = NUM_CLUSTERS,
+    parameter BASE_THRESHOLD_UPPER         = BASE_THRESHOLD,
+    parameter THETA_INCREMENT_UPPER        = THETA_INCREMENT,
+
     // WTA group, expressed as local addresses inside every cluster
     parameter WTA_GROUP_START              = 0,
     parameter WTA_GROUP_END                = 0,
@@ -132,10 +144,12 @@ module neuron_cluster_array #(
                 .LTD_SHIFT_AMOUNT           (LTD_SHIFT_AMOUNT),
                 .INCREASE_MODE              (INCREASE_MODE),
                 .MEMBRANE_BIT_WIDTH         (MEMBRANE_BIT_WIDTH),
-                .BASE_THRESHOLD             (BASE_THRESHOLD),
+                .BASE_THRESHOLD             ((c >= CLUSTER_SPLIT_INDEX) ?
+                                             BASE_THRESHOLD_UPPER : BASE_THRESHOLD),
                 .MEMBRANE_LEAK_SHIFT        (MEMBRANE_LEAK_SHIFT),
                 .REFRACTORY_CYCLES          (REFRACTORY_CYCLES),
-                .THETA_INCREMENT            (THETA_INCREMENT),
+                .THETA_INCREMENT            ((c >= CLUSTER_SPLIT_INDEX) ?
+                                             THETA_INCREMENT_UPPER : THETA_INCREMENT),
                 .THETA_DECAY_SHIFT          (THETA_DECAY_SHIFT),
                 .WTA_GROUP_START            (WTA_GROUP_START),
                 .WTA_GROUP_END              (WTA_GROUP_END),
