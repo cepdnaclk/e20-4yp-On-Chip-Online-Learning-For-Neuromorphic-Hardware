@@ -65,6 +65,9 @@ module banked_weight_memory #(
             end
         end else begin
             // ---- Write (highest priority) ----
+            // PERFORMANCE: guarded so the 128-bank scan only runs on the rare
+            // cycles where a write is actually requested.
+            if (|weight_write_enable_per_bank)
             for (bank_idx = 0; bank_idx < NUM_WEIGHT_BANKS; bank_idx = bank_idx + 1) begin
                 if (weight_write_enable_per_bank[bank_idx]) begin
                     bank_memory[bank_idx][weight_write_address] <=

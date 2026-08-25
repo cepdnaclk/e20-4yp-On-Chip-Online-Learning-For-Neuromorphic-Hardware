@@ -19,6 +19,7 @@ module tb_spike_input_queue;
     reg  dequeue_acknowledge;
     wire queue_empty_flag;
     wire queue_full_flag;
+    wire queue_overflow_flag;
 
     spike_input_queue #(
         .NUM_NEURONS_PER_CLUSTER(NUM_NEURONS_PER_CLUSTER),

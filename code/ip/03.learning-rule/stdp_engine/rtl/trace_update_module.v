@@ -149,14 +149,19 @@ module trace_update_module #(
                         result_trace_saturated_flag   <= 1'b0;
                     end else begin
                         // DECAY_COMPUTE operation
+                        // FIX: the decayed value is the trace as of NOW, so it
+                        // must be re-stamped with the current timer value. The
+                        // old code wrote it back with the ORIGINAL timestamp,
+                        // so the next read decayed the already-decayed value
+                        // from the same old delta_t all over again.
                         if (decay_goes_to_zero) begin
                             result_trace_value            <= {TRACE_VALUE_BIT_WIDTH{1'b0}};
                             result_trace_saturated_flag   <= 1'b1;
-                            result_trace_stored_timestamp <= captured_timestamp_register;
+                            result_trace_stored_timestamp <= captured_timer_value_register;
                         end else begin
                             result_trace_value            <= corrected_trace_value;
                             result_trace_saturated_flag   <= 1'b0;
-                            result_trace_stored_timestamp <= captured_timestamp_register;
+                            result_trace_stored_timestamp <= captured_timer_value_register;
                         end
                     end
 

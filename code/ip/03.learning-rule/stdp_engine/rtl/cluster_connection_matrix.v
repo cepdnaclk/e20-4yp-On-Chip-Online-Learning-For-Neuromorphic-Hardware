@@ -1,9 +1,18 @@
 // =============================================================================
 // Module: cluster_connection_matrix
-// Description: Stores a 2-bit connection descriptor per neuron pair.
-//              Bit[1] = column_neuron is input to row_neuron (MSB).
-//              Bit[0] = row_neuron outputs to column_neuron (LSB).
-//              Read is registered (1-cycle latency). Write is synchronous.
+// Description: Per-neuron connectivity descriptors.
+//
+//   input_connection_rows[r][c]  = 1  ->  neuron c is PRE-synaptic to neuron r
+//                                         (drives LTP/LTD when r fires)
+//   output_connection_rows[r][c] = 1  ->  neuron r drives neuron c
+//                                         (drives weight distribution when r fires)
+//
+// FIX (was P0): the read used to be REGISTERED while row_data_valid was
+// asserted unconditionally on every non-reset cycle. The STDP controller
+// therefore latched the connectivity of whatever row had been addressed
+// previously — every spike was processed against the wrong neuron. The read
+// is now purely COMBINATIONAL (this is a small register file), so the vectors
+// are always consistent with read_row_neuron_address.
 // Spec Reference: Section 4.9
 // =============================================================================
 
@@ -16,48 +25,41 @@ module cluster_connection_matrix #(
     input  wire                                clock,
     input  wire                                reset,
 
-    // Read port (registered output — 1-cycle latency)
+    // Read port (combinational — no latency)
     input  wire [NEURON_ADDRESS_WIDTH-1:0]     read_row_neuron_address,
-    output reg  [NUM_NEURONS_PER_CLUSTER-1:0]  row_input_connection_vector,
-    output reg  [NUM_NEURONS_PER_CLUSTER-1:0]  row_output_connection_vector,
-    output reg                                 row_data_valid,
+    output wire [NUM_NEURONS_PER_CLUSTER-1:0]  row_input_connection_vector,
+    output wire [NUM_NEURONS_PER_CLUSTER-1:0]  row_output_connection_vector,
+    output wire                                row_data_valid,
 
-    // Write port (synchronous)
+    // Write port (synchronous, one bit-pair per cycle)
     input  wire                                write_enable,
     input  wire [NEURON_ADDRESS_WIDTH-1:0]     write_row_neuron_address,
     input  wire [NEURON_ADDRESS_WIDTH-1:0]     write_column_neuron_address,
     input  wire [1:0]                          write_connection_bits
 );
 
-    // Internal storage: 2 bits per entry
-    reg [1:0] connection_table [0:NUM_NEURONS_PER_CLUSTER-1][0:NUM_NEURONS_PER_CLUSTER-1];
+    // Storage held as one N-bit vector per row per direction. This is both
+    // cheaper to read combinationally and far faster to simulate than an
+    // N x N array of 2-bit entries.
+    reg [NUM_NEURONS_PER_CLUSTER-1:0] input_connection_rows  [0:NUM_NEURONS_PER_CLUSTER-1];
+    reg [NUM_NEURONS_PER_CLUSTER-1:0] output_connection_rows [0:NUM_NEURONS_PER_CLUSTER-1];
 
-    // Registered read
-    integer col_idx;
-    integer rst_row, rst_col;
+    assign row_input_connection_vector  = input_connection_rows [read_row_neuron_address];
+    assign row_output_connection_vector = output_connection_rows[read_row_neuron_address];
+    assign row_data_valid               = 1'b1;   // combinational read is always valid
 
+    integer rst_row;
     always @(posedge clock) begin
         if (reset) begin
-            row_data_valid <= 1'b0;
-            row_input_connection_vector  <= {NUM_NEURONS_PER_CLUSTER{1'b0}};
-            row_output_connection_vector <= {NUM_NEURONS_PER_CLUSTER{1'b0}};
             for (rst_row = 0; rst_row < NUM_NEURONS_PER_CLUSTER; rst_row = rst_row + 1) begin
-                for (rst_col = 0; rst_col < NUM_NEURONS_PER_CLUSTER; rst_col = rst_col + 1) begin
-                    connection_table[rst_row][rst_col] <= 2'b00;
-                end
+                input_connection_rows [rst_row] <= {NUM_NEURONS_PER_CLUSTER{1'b0}};
+                output_connection_rows[rst_row] <= {NUM_NEURONS_PER_CLUSTER{1'b0}};
             end
-        end else begin
-            // Registered read — data valid one cycle after address presented
-            row_data_valid <= 1'b1;
-            for (col_idx = 0; col_idx < NUM_NEURONS_PER_CLUSTER; col_idx = col_idx + 1) begin
-                row_input_connection_vector[col_idx]  <= connection_table[read_row_neuron_address][col_idx][1];
-                row_output_connection_vector[col_idx] <= connection_table[read_row_neuron_address][col_idx][0];
-            end
-
-            // Synchronous write
-            if (write_enable) begin
-                connection_table[write_row_neuron_address][write_column_neuron_address] <= write_connection_bits;
-            end
+        end else if (write_enable) begin
+            input_connection_rows [write_row_neuron_address][write_column_neuron_address]
+                <= write_connection_bits[1];
+            output_connection_rows[write_row_neuron_address][write_column_neuron_address]
+                <= write_connection_bits[0];
         end
     end
 

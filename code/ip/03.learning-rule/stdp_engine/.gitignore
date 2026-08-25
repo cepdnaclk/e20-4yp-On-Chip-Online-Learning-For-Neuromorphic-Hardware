@@ -1,0 +1,14 @@
+# Generated simulation data — regenerate with `make mnist_prepare`
+*.hex
+tb/*.hex
+tb/mnist_config.vh
+
+# MNIST source data — fetch with `make download_mnist`
+data/mnist/
+
+# Build + simulation artifacts
+build/
+*.vvp
+*.vcd
+a.out
+out*.log
