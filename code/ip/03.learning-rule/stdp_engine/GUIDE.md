@@ -143,7 +143,120 @@ parameters at the top of `tb/tb_mnist_stdp.v` — those you edit by hand.
 
 ---
 
-## 4. What you get back
+## 4. Many clusters
+
+The design scales past one cluster. `neuron_cluster_array` instantiates
+`NUM_CLUSTERS` clusters plus one `spike_router`.
+
+```bash
+make multi_cluster                    # 4 clusters x 32 =  128 neurons
+make multi_cluster MC_CLUSTERS=32     # 32 clusters x 32 = 1024 neurons
+make multi_cluster_all                # sweep 2, 4, 8, 32 clusters
+```
+
+### How clusters talk
+
+**Only 1-bit spike events cross a cluster boundary.** Weights, traces and
+crossbar state stay entirely inside the cluster that owns the *post-synaptic*
+neuron, so nothing has to be shared or kept coherent between clusters. This is
+the same partitioning IBM TrueNorth uses: a core owns its axons, its crossbar
+and its neurons; the network carries spikes only.
+
+```
+cluster k neuron fires
+  -> cluster_spike_output_bus[k]
+  -> spike_router      (routing table: destination clusters + axon index)
+  -> external_spike_input_bus of each destination cluster
+  -> that cluster distributes the axon's weight row to its own neurons
+     and bumps that axon's pre-synaptic trace
+```
+
+`neuron_cluster` itself is **unchanged**. Its existing
+`external_spike_input_bus` already behaves exactly as an axon injection port —
+an injected address is treated as a pre-synaptic source, so "a remote neuron
+fired" is delivered simply by pulsing the axon slot that represents it.
+Multi-cluster is a pure wrapper, which is why the single-cluster MNIST path
+carries zero risk from it.
+
+### Address map
+
+```
+global address = cluster_index * NUM_NEURONS_PER_CLUSTER + local_index
+```
+
+Inside a cluster, local addresses are split by convention (nothing is
+hardwired — the testbench decides):
+
+| Role | Behaviour |
+|---|---|
+| **axon** | driven by the router or by external input; acts purely as a pre-synaptic source |
+| **neuron** | a real LIF neuron whose spikes leave the cluster through the router |
+
+An axon slot still instantiates a LIF neuron that never fires, because nothing
+is wired into it. That costs area but keeps `neuron_cluster` untouched.
+
+### Routing table
+
+Three arrays inside `spike_router`, one entry per global neuron:
+
+```verilog
+route_valid             [g]   // 1 = neuron g's spikes go somewhere
+route_dest_cluster_mask [g]   // bitmask of destination clusters
+route_dest_axon         [g]   // axon index within each destination cluster
+```
+
+One entry can fan out to several clusters, but always to the **same axon index**
+in each. That keeps the table one word per neuron instead of one word per
+(neuron, cluster) pair. The router serialises simultaneous spikes through a
+FIFO, one delivery per clock, so nothing is merged or lost.
+
+### What is verified
+
+`tb/tb_multi_cluster.v` builds a feedforward chain
+`ext -> C0.axon -> C0.neuron -> C1.axon -> C1.neuron -> ...` and checks:
+
+| # | Check |
+|---|---|
+| 1 | An injected spike fires cluster 0's neuron |
+| 2 | The router carries it across a cluster boundary |
+| 3 | The chain propagates through every cluster in order |
+| 4 | A cluster with no outgoing route drives nothing |
+| 5 | Simultaneous spikes are serialised, not merged |
+| 6 | **LTP on a cross-cluster synapse** — a weight in the downstream cluster rises when its routed axon fires just before its neuron |
+| 7 | **LTD** — a weight whose axon stayed silent falls |
+| 8 | No queue overflow, transaction timeout or router overflow |
+
+Results:
+
+```
+ 2 clusters x 32 =  64 neurons    13 passed, 0 failed
+ 4 clusters x 32 = 128 neurons    17 passed, 0 failed
+ 8 clusters x 32 = 256 neurons    25 passed, 0 failed
+32 clusters x 32 = 1024 neurons   73 passed, 0 failed     <- target config
+```
+
+The 1024-neuron build elaborates in ~1 s and simulates in ~5 s. Cross-cluster
+STDP measured in cluster 1: `W(routed axon -> neuron) 250 -> 255` (LTP),
+`W(silent axon -> neuron) 120 -> 113` (LTD).
+
+### Multi-cluster limits
+
+* **Winner-take-all is per cluster.** There is no global WTA across clusters.
+* **A routing entry fans out to one axon index**, the same in every destination
+  cluster.
+* **Fan-in per neuron is bounded by `NUM_NEURONS_PER_CLUSTER`**, because the
+  crossbar is that many axons wide. With 32-neuron clusters each neuron sees at
+  most 32 sources — the network must be sparse.
+* **The MNIST demo is still single-cluster.** `make mnist` targets one
+  `neuron_cluster`; it has not been re-partitioned across the array. Mapping
+  MNIST onto many clusters means splitting the 100 inputs across cores, which
+  is a topology design task, not an RTL one.
+* **`tb_multi_cluster` requires `NUM_CLUSTERS >= 2`** — the cross-cluster STDP
+  check reads cluster 1.
+
+---
+
+## 5. What you get back
 
 ```
 ACCURACY : 29.58 %   (71/240)        random baseline 10.00 %
@@ -177,7 +290,7 @@ be 0. Non-zero means the pipeline stalled — a real bug, not just poor accuracy
 
 ---
 
-## 5. Limitations
+## 6. Limitations
 
 ### Hard limits (RTL changes required)
 
@@ -242,7 +355,7 @@ Two levers, in order of impact, **neither needing RTL changes**:
 
 ---
 
-## 6. If something looks wrong
+## 7. If something looks wrong
 
 | Symptom | Meaning |
 |---|---|

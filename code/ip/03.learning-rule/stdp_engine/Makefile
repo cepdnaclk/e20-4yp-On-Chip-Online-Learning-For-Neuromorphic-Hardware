@@ -210,6 +210,39 @@ mnist_run:
 
 mnist: mnist_prepare mnist_build mnist_run
 
+
+# =============================================================================
+# MULTI-CLUSTER architecture tests
+# =============================================================================
+#   make multi_cluster                       # 4 clusters x 32 = 128 neurons
+#   make multi_cluster MC_CLUSTERS=32        # 32 clusters x 32 = 1024 neurons
+#   make multi_cluster_all                   # sweep 1, 4, 8, 32 clusters
+#
+# Clusters exchange 1-bit spike events only; weights and traces never cross a
+# cluster boundary. See rtl/spike_router.v and rtl/neuron_cluster_array.v.
+# =============================================================================
+
+MC_CLUSTERS ?= 4
+
+RTL_MULTI = $(RTL_STDP) $(RTL_DIR)/spike_router.v $(RTL_DIR)/neuron_cluster_array.v
+
+.PHONY: multi_cluster multi_cluster_all
+
+multi_cluster: dir
+	$(IVERILOG) -g2005 -P tb_multi_cluster.NUM_CLUSTERS=$(MC_CLUSTERS) \
+	    -o $(BUILD_DIR)/tb_multi_cluster.vvp \
+	    $(RTL_MULTI) $(TB_DIR)/tb_multi_cluster.v
+	$(VVP) $(BUILD_DIR)/tb_multi_cluster.vvp
+
+multi_cluster_all: dir
+	@for n in 2 4 8 32; do \
+	    echo ""; echo "=== $$n cluster(s) x 32 neurons ==="; \
+	    $(IVERILOG) -g2005 -P tb_multi_cluster.NUM_CLUSTERS=$$n \
+	        -o $(BUILD_DIR)/tb_mc_$$n.vvp \
+	        $(RTL_MULTI) $(TB_DIR)/tb_multi_cluster.v || exit 1; \
+	    $(VVP) $(BUILD_DIR)/tb_mc_$$n.vvp | tail -4 || exit 1; \
+	done
+
 # =============================================================================
 # LEGACY MNIST inference test (superseded by 'make mnist')
 # =============================================================================

@@ -263,3 +263,35 @@ value means the pipeline stalled rather than merely performing poorly.
 
 `DIAGNOSIS.md` records the defects found in the original design and why each
 mattered.
+
+---
+
+## 9. Multi-cluster
+
+`rtl/neuron_cluster_array.v` instantiates `NUM_CLUSTERS` clusters plus one
+`rtl/spike_router.v`. Total neurons = `NUM_CLUSTERS * NUM_NEURONS_PER_CLUSTER`;
+32 x 32 = 1024 is verified.
+
+```bash
+make multi_cluster                    # 4 clusters x 32 =  128 neurons
+make multi_cluster MC_CLUSTERS=32     # 32 clusters x 32 = 1024 neurons
+make multi_cluster_all                # sweep 2, 4, 8, 32
+```
+
+Only 1-bit spike events cross a cluster boundary. Weights, traces and crossbar
+state stay inside the cluster owning the post-synaptic neuron, so nothing is
+shared or coherent between clusters — the TrueNorth partitioning.
+
+`neuron_cluster` is unchanged: its `external_spike_input_bus` already acts as an
+axon injection port, so "a remote neuron fired" is delivered by pulsing the
+axon slot representing it. The router holds a table per global neuron
+(`route_valid`, `route_dest_cluster_mask`, `route_dest_axon`) and serialises
+simultaneous spikes through a FIFO, one delivery per clock.
+
+`tb/tb_multi_cluster.v` verifies cross-cluster propagation, routing isolation,
+serialisation, and **cross-cluster STDP** (LTP on the routed synapse, LTD on a
+silent one): 73/73 pass at 1024 neurons. Requires `NUM_CLUSTERS >= 2`.
+
+Limits: WTA is per cluster (no global WTA); a routing entry fans out to the
+same axon index in every destination cluster; fan-in per neuron is bounded by
+`NUM_NEURONS_PER_CLUSTER`; and the MNIST demo is still single-cluster.
