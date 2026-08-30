@@ -1,0 +1,641 @@
+<title>The Self-Teaching Chip</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;600&display=swap">
+
+<style>
+  :root{
+    --ground:#F1F2EC; --surface:#FFFFFF; --surface-2:#E7E9E0;
+    --ink:#171A16; --ink-2:#5B625A; --rule:#D5D9CC;
+    --accent:#2C5F4B; --accent-2:#5E8F76; --warn:#8E4520;
+    --w0:#E4E7DC; --w1:#C3CFB8; --w2:#94AF93; --w3:#5C8A6D; --w4:#2C5F4B;
+    --shadow:0 1px 2px rgba(23,26,22,.05), 0 8px 24px -12px rgba(23,26,22,.18);
+    --sans:"Archivo","Helvetica Neue",Arial,sans-serif;
+    --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+    --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --ground:#121410; --surface:#1A1D17; --surface-2:#232720;
+      --ink:#E9ECE3; --ink-2:#969E92; --rule:#2F3429;
+      --accent:#86C4A0; --accent-2:#4E7A62; --warn:#D38C5E;
+      --w0:#232720; --w1:#34402F; --w2:#4A6B4E; --w3:#669A72; --w4:#8FCBA2;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#121410; --surface:#1A1D17; --surface-2:#232720;
+    --ink:#E9ECE3; --ink-2:#969E92; --rule:#2F3429;
+    --accent:#86C4A0; --accent-2:#4E7A62; --warn:#D38C5E;
+    --w0:#232720; --w1:#34402F; --w2:#4A6B4E; --w3:#669A72; --w4:#8FCBA2;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--ground); color:var(--ink);
+    font-family:var(--serif); font-size:17px; line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:60rem;margin:0 auto;padding:0 1.5rem 6rem}
+  .col{max-width:38rem}
+  h1,h2,h3,h4{font-family:var(--sans);text-wrap:balance;line-height:1.15;margin:0}
+  p{margin:0}
+  a{color:var(--accent)}
+  strong{font-weight:600}
+
+  /* ── hero ─────────────────────────────────────────── */
+  header{padding:5rem 0 3rem;border-bottom:1px solid var(--rule)}
+  .eyebrow{
+    font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--ink-2);margin-bottom:1.5rem
+  }
+  h1{font-size:clamp(2.3rem,6.5vw,4rem);font-weight:700;letter-spacing:-.025em}
+  .standfirst{
+    font-size:clamp(1.1rem,2.2vw,1.3rem);color:var(--ink-2);
+    margin-top:1.25rem;max-width:34rem
+  }
+
+  /* receptive-field plates */
+  .plates{display:flex;flex-wrap:wrap;gap:1.75rem;margin-top:3rem}
+  .plate{display:flex;flex-direction:column;gap:.6rem}
+  .rf{
+    display:grid;grid-template-columns:repeat(10,1fr);gap:1px;
+    width:104px;padding:5px;background:var(--surface);
+    border:1px solid var(--rule);border-radius:3px
+  }
+  .rf i{aspect-ratio:1;border-radius:1px;display:block}
+  .w0{background:var(--w0)} .w1{background:var(--w1)}
+  .w2{background:var(--w2)} .w3{background:var(--w3)} .w4{background:var(--w4)}
+  .plate figcaption{
+    font-family:var(--mono);font-size:.68rem;line-height:1.45;color:var(--ink-2)
+  }
+  .plate b{display:block;color:var(--ink);font-weight:600}
+
+  /* ── sections ─────────────────────────────────────── */
+  section{padding-top:4rem}
+  .head{display:flex;align-items:baseline;gap:1rem;margin-bottom:1.75rem}
+  .num{
+    font-family:var(--mono);font-size:.75rem;color:var(--accent);
+    font-weight:600;padding-top:.35rem
+  }
+  h2{font-size:clamp(1.5rem,3.2vw,2.05rem);font-weight:600;letter-spacing:-.02em}
+  h3{
+    font-family:var(--sans);font-size:1.05rem;font-weight:600;
+    margin:2.25rem 0 .6rem;letter-spacing:-.005em
+  }
+  .stack{display:flex;flex-direction:column;gap:1.15rem}
+
+  /* ── code ─────────────────────────────────────────── */
+  pre{
+    font-family:var(--mono);font-size:.82rem;line-height:1.75;
+    background:var(--surface);border:1px solid var(--rule);
+    border-left:2px solid var(--accent);border-radius:4px;
+    padding:.9rem 1.1rem;margin:0;overflow-x:auto;color:var(--ink)
+  }
+  pre .c{color:var(--ink-2)}
+  code{
+    font-family:var(--mono);font-size:.86em;
+    background:var(--surface-2);padding:.1em .35em;border-radius:3px
+  }
+
+  /* ── experiment cards ─────────────────────────────── */
+  .exps{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1rem;margin-top:.5rem}
+  .exp{
+    background:var(--surface);border:1px solid var(--rule);border-radius:6px;
+    padding:1.35rem;display:flex;flex-direction:column;gap:.7rem;box-shadow:var(--shadow)
+  }
+  .exp.best{border-color:var(--accent-2);border-width:1.5px}
+  .exp h4{font-size:1rem;font-weight:600;display:flex;align-items:center;gap:.5rem}
+  .tag{
+    font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;
+    background:var(--accent);color:var(--ground);padding:.18em .5em;border-radius:2px;font-weight:600
+  }
+  .exp pre{font-size:.74rem;padding:.6rem .75rem}
+  .exp .desc{font-size:.92rem;color:var(--ink-2);line-height:1.6;flex:1}
+  .score{
+    font-family:var(--sans);font-size:2rem;font-weight:700;letter-spacing:-.03em;
+    font-variant-numeric:tabular-nums;line-height:1
+  }
+  .score.dim{color:var(--ink-2)}
+  .score small{font-family:var(--serif);font-size:.8rem;font-weight:400;color:var(--ink-2);letter-spacing:0}
+
+  /* ── chart ────────────────────────────────────────── */
+  .chart{
+    background:var(--surface);border:1px solid var(--rule);border-radius:6px;
+    padding:1.5rem;margin-top:.5rem;box-shadow:var(--shadow)
+  }
+  .chart-t{font-family:var(--sans);font-size:.95rem;font-weight:600;margin-bottom:.3rem}
+  .chart-s{font-size:.85rem;color:var(--ink-2);margin-bottom:1.5rem}
+  .bars{display:flex;flex-direction:column;gap:.9rem;position:relative;padding-top:1.6rem}
+  .bar-row{display:grid;grid-template-columns:minmax(6.5rem,auto) 1fr;gap:.9rem;align-items:center}
+  .bar-lab{font-family:var(--sans);font-size:.78rem;color:var(--ink-2);text-align:right;line-height:1.3}
+  .bar-lab b{display:block;color:var(--ink);font-weight:600;font-size:.83rem}
+  .track{position:relative;height:26px;display:flex;align-items:center}
+  .fill{
+    height:22px;border-radius:0 4px 4px 0;background:var(--accent-2);
+    display:flex;align-items:center;justify-content:flex-end;padding-right:.5rem;
+    transition:width .8s cubic-bezier(.22,1,.36,1)
+  }
+  .fill.hi{background:var(--accent)}
+  .fill.base{background:var(--w1)}
+  .fill span{
+    font-family:var(--mono);font-size:.72rem;font-weight:600;color:var(--ground);
+    font-variant-numeric:tabular-nums
+  }
+  .fill.base span{color:var(--ink-2)}
+  .ref{
+    position:absolute;top:1.3rem;bottom:-.3rem;width:0;
+    border-left:1.5px dashed var(--ink-2);opacity:.55;pointer-events:none
+  }
+  .ref-lab{
+    position:absolute;top:0;transform:translateX(-50%);white-space:nowrap;
+    font-family:var(--mono);font-size:.63rem;color:var(--ink-2)
+  }
+  .chart-foot{
+    margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--rule);
+    font-size:.8rem;color:var(--ink-2)
+  }
+
+  /* ── tables ───────────────────────────────────────── */
+  .scroll{overflow-x:auto;margin:.5rem 0}
+  table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:30rem}
+  th,td{text-align:left;padding:.6rem .85rem;border-bottom:1px solid var(--rule);vertical-align:top}
+  th{
+    font-family:var(--sans);font-size:.7rem;text-transform:uppercase;letter-spacing:.09em;
+    color:var(--ink-2);font-weight:600;border-bottom-color:var(--ink-2)
+  }
+  td.n{font-family:var(--mono);font-size:.82rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  .dial{font-family:var(--mono);font-size:.78rem;color:var(--accent);font-weight:600}
+
+  /* ── callouts ─────────────────────────────────────── */
+  .note{
+    border-left:2px solid var(--accent);background:var(--surface);
+    padding:1rem 1.25rem;border-radius:0 4px 4px 0;font-size:.94rem
+  }
+  .note.warn{border-left-color:var(--warn)}
+  .note b{font-family:var(--sans);font-weight:600}
+
+  .verdict{display:grid;grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));gap:1.25rem;margin-top:.5rem}
+  .vcard{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:1.35rem}
+  .vcard h4{
+    font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;font-weight:600;
+    margin-bottom:.9rem;color:var(--accent)
+  }
+  .vcard.lim h4{color:var(--warn)}
+  .vcard ul{margin:0;padding-left:1.1rem;display:flex;flex-direction:column;gap:.7rem}
+  .vcard li{font-size:.93rem;line-height:1.6}
+  .vcard li::marker{color:var(--ink-2)}
+
+  footer{
+    margin-top:5rem;padding-top:2rem;border-top:1px solid var(--rule);
+    font-size:.85rem;color:var(--ink-2)
+  }
+  @media (max-width:640px){
+    body{font-size:16px}
+    header{padding:3rem 0 2rem}
+    .head{flex-direction:column;gap:.2rem}
+    .num{padding-top:0}
+    .bar-row{grid-template-columns:1fr;gap:.25rem}
+    .bar-lab{text-align:left}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">NOMAD · On-chip online learning · Field guide</div>
+  <h1>The chip that teaches itself</h1>
+  <p class="standfirst">
+    A neuromorphic accelerator that learns handwriting <em>while it runs</em> —
+    no training computer, no backpropagation. Here is what it does, what it
+    scored, and how to run every experiment yourself.
+  </p>
+
+  <div class="plates" id="plates"></div>
+</header>
+
+<section>
+  <div class="head"><span class="num">01</span><h2>What this actually is</h2></div>
+  <div class="col stack">
+    <p>
+      Normal AI is trained on a big computer first. Only the finished result is
+      loaded onto a chip — the chip never learns anything, it just answers.
+    </p>
+    <p>
+      This one works the other way round. It switches on knowing nothing, watches
+      handwriting go past, and <strong>rewires its own connections as it looks</strong>.
+      Nobody ever tells it "that was a seven." It works out on its own that certain
+      shapes belong together. Only at the very end do we check which digit each part
+      of it settled on.
+    </p>
+    <p>
+      The four plates above are the proof, read straight out of the chip's memory
+      after a run. Three neurons taught themselves a zero, a one and a seven. The
+      fourth never won a competition, so it stayed the noise it started as.
+    </p>
+    <p>
+      The chip doesn't physically exist yet. It's a complete blueprint, run through
+      a <strong>simulator</strong> — a program that pretends to be the chip, wire by
+      wire. That's why a run takes hours: one computer is imitating something
+      silicon would do instantly.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="head"><span class="num">02</span><h2>Set up, once</h2></div>
+  <div class="col stack">
+    <p>Two things. Install the simulator:</p>
+    <pre>sudo pacman -S iverilog   <span class="c"># Arch. On Ubuntu: sudo apt install iverilog</span></pre>
+    <p>Then get the handwriting images and move into the working folder:</p>
+<pre>cd code/ip/03.learning-rule/stdp_engine
+make download_mnist</pre>
+    <p>
+      That fetches MNIST — 70,000 photos of handwritten digits, the standard
+      practice set. About 55 MB, once. If you already have it, it says
+      <code>[skip]</code> and exits.
+    </p>
+    <div class="note">
+      <b>Check it worked.</b> <code>make test_all</code> runs seven self-checks on
+      the individual pieces — small module tests rather than a full simulation, so
+      they finish quickly. If they pass, you're ready. Every command from here runs
+      in that same folder.
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="head"><span class="num">03</span><h2>The four experiments</h2></div>
+  <div class="col stack" style="margin-bottom:1.75rem">
+    <p>
+      Each is one command. Nothing to edit, no files to open. Think of a
+      <strong>cluster</strong> as a room with a fixed number of chairs — every pixel
+      of the picture and every learning neuron needs its own chair.
+    </p>
+  </div>
+
+  <div class="exps">
+    <div class="exp">
+      <h4>One cluster</h4>
+      <pre>make mnist</pre>
+      <p class="desc">One room of 128 chairs. 100 hold the picture, 28 are neurons that learn. The baseline.</p>
+      <div class="score dim">29.58<small> %</small></div>
+    </div>
+
+    <div class="exp best">
+      <h4>Wide <span class="tag">best</span></h4>
+      <pre>make mnist_wide</pre>
+      <p class="desc">Four rooms, each seeing the whole picture and forming its own opinion. All 112 neurons vote at the end.</p>
+      <div class="score">41.67<small> %</small></div>
+    </div>
+
+    <div class="exp">
+      <h4>Layered</h4>
+      <pre>make mnist_layered</pre>
+      <p class="desc">Two stages: four rooms each study one quarter, then hand a summary to a fifth room. Barely beat guessing.</p>
+      <div class="score dim">11.25<small> %</small></div>
+    </div>
+
+    <div class="exp">
+      <h4>Wide at 14×14</h4>
+      <pre>make mnist_wide \
+  MNIST_GRID=14 \
+  MNIST_CLUSTERS=2 \
+  MNIST_NEURONS=256 \
+  MNIST_TIMESTEPS=15</pre>
+      <p class="desc">The winning idea at higher resolution. Took 6 h 11 m — the one run we timed precisely.</p>
+      <div class="score dim">32.92<small> %</small></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="head"><span class="num">04</span><h2>Reading the result</h2></div>
+  <div class="col stack">
+<pre>ACCURACY : 41.67 %      100 of 240 test images
+Health   : queue overflow=0  stdp timeout=0  router overflow=0</pre>
+    <p>
+      <strong>The accuracy</strong> is how many of 240 unseen pictures it got right.
+      Guessing scores about 10%.
+    </p>
+    <div class="note warn">
+      <b>The health line matters more.</b> Every number must be zero. Zeros mean the
+      hardware ran cleanly and the score is real. Anything else means the design
+      jammed and the score is meaningless — a fault, not a bad result. Every run so
+      far has been all zeros.
+    </div>
+    <p>
+      You'll also see small pictures made of <code>#</code> and <code>+</code>
+      characters — the plates at the top of this page are exactly that, drawn in
+      colour. Each is what one neuron decided to look for. When learning works, you
+      can see digit shapes in them. It's the most direct evidence that anything was
+      learned at all.
+    </p>
+    <p>
+      Every run saves itself under <code>runs/</code> in a date-stamped folder with
+      the full log, the settings used, and the headline score. Nothing is ever
+      overwritten, so old results stay comparable.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="head"><span class="num">05</span><h2>Designing your own</h2></div>
+  <div class="col stack">
+    <h3>The one rule</h3>
+    <p>
+      Pixels and neurons share the same room. A 128-chair room showing a 10×10
+      picture spends 100 chairs on pixels, leaving <strong>28</strong> for neurons.
+      Want more neurons? Only two options: <strong>a bigger room</strong>, or
+      <strong>more rooms</strong>. More rooms is what won.
+    </p>
+    <p>
+      Room sizes must be 64, 128, 256, 512 or 1024 — the memory is physically wired
+      that way. Ask for something impossible and the tool refuses in plain words
+      rather than building something broken:
+    </p>
+    <pre>196 inputs leaves no room for neurons in a 128-slot cluster;
+raise --neurons-per-cluster to 256</pre>
+  </div>
+
+  <h3 style="max-width:38rem">What fits</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Picture</th><th>Pixels</th><th>Room</th><th>Neurons left</th><th>Speed</th></tr></thead>
+      <tbody>
+        <tr><td class="n">7×7</td><td class="n">49</td><td class="n">64</td><td class="n">15</td><td>very fast</td></tr>
+        <tr><td class="n">10×10</td><td class="n">100</td><td class="n">128</td><td class="n">28</td><td>a few hours</td></tr>
+        <tr><td class="n">14×14</td><td class="n">196</td><td class="n">256</td><td class="n">60</td><td>~4× slower</td></tr>
+        <tr><td class="n">28×28</td><td class="n">784</td><td class="n">1024</td><td class="n">240</td><td>fits, but weeks</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="col stack" style="margin-top:1rem">
+    <p>
+      Full-size MNIST <strong>does fit the design</strong> — 784 + 240 = 1024. Only
+      the simulator's speed stops us. On real silicon it would be fine.
+    </p>
+  </div>
+
+  <h3 style="max-width:38rem">The dials</h3>
+  <div class="col stack" style="margin-bottom:.5rem">
+    <p>Add any of these to the end of a command. Anything you leave out keeps its default.</p>
+  </div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Dial</th><th>Default</th><th>What it changes</th></tr></thead>
+      <tbody>
+        <tr><td class="dial">MNIST_IMAGES</td><td class="n">1200</td><td>how many pictures — 60% learn / 20% label / 20% test</td></tr>
+        <tr><td class="dial">MNIST_GRID</td><td class="n">10</td><td>picture size — 7, 10 or 14</td></tr>
+        <tr><td class="dial">MNIST_NEURONS</td><td class="n">128</td><td>chairs per room — must be a power of two</td></tr>
+        <tr><td class="dial">MNIST_CLUSTERS</td><td class="n">4</td><td>how many rooms</td></tr>
+        <tr><td class="dial">MNIST_TIMESTEPS</td><td class="n">20</td><td>how long each picture is shown</td></tr>
+        <tr><td class="dial">MNIST_THRESHOLD</td><td class="n">1500</td><td>how easily a neuron reacts — lower fires more</td></tr>
+        <tr><td class="dial">MNIST_MAX_RATE</td><td class="n">0.55</td><td>how loudly a bright pixel shouts</td></tr>
+        <tr><td class="dial">MNIST_SEED</td><td class="n">1</td><td>the randomness — change it to repeat a run differently</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="max-width:38rem">Recipes</h3>
+  <div class="col stack">
+<pre><span class="c"># A quick taste — small pictures, few images, minutes not hours</span>
+make mnist_wide MNIST_GRID=7 MNIST_NEURONS=64 MNIST_IMAGES=200
+
+<span class="c"># Twice the brain: 8 rooms instead of 4</span>
+make mnist_wide MNIST_CLUSTERS=8
+
+<span class="c"># A 256-chair room leaves 156 chairs for neurons</span>
+make mnist_wide MNIST_NEURONS=256
+
+<span class="c"># Is the best result luck? Re-run with different randomness</span>
+make mnist_wide MNIST_SEED=7
+
+<span class="c"># Nothing firing? Make the neurons more sensitive</span>
+make mnist_wide MNIST_THRESHOLD=900</pre>
+    <p>
+      To check that many rooms can talk to each other without any learning —
+      a hardware test that finishes in seconds:
+    </p>
+<pre>make multi_cluster                    <span class="c"># 4 rooms</span>
+make multi_cluster MC_CLUSTERS=32     <span class="c"># 32 rooms = 1024 neurons</span></pre>
+  </div>
+</section>
+
+<section>
+  <div class="head"><span class="num">06</span><h2>What we learned</h2></div>
+
+  <div class="chart">
+    <div class="chart-t">Accuracy by network shape</div>
+    <div class="chart-s">1200 MNIST images — 720 to learn from, 240 to label with, 240 to be tested on. Identical learning settings throughout.</div>
+    <div class="bars" id="bars"></div>
+    <div class="chart-foot">
+      Every run passed its health check with all counters at zero, so each score
+      reflects learning, not a stalled pipeline.
+    </div>
+  </div>
+
+  <div class="col stack" style="margin-top:2.5rem">
+    <h3 style="margin-top:0">Wider beats deeper, clearly</h3>
+    <p>
+      Going from 28 neurons to 112 added 12 points. More neurons looking at the same
+      picture and voting is what helped — not more stages.
+    </p>
+
+    <h3>Why the layered one failed</h3>
+    <p>
+      Not a bug. The hardware ran perfectly and the first stage genuinely learned
+      clean fragments of pen strokes. The problem is that neurons inside a room
+      <em>compete</em>, and only one may win at a time. So each of the four
+      first-stage rooms passes on a single answer. The whole picture is squeezed to
+      about 12 bits before the second stage sees it, and nothing downstream can
+      rebuild what was thrown away.
+    </p>
+    <div class="note">
+      <b>The lesson:</b> competition is useful <em>inside</em> a layer and
+      destructive <em>between</em> layers.
+    </div>
+
+    <h3>Why higher resolution scored worse</h3>
+    <p>
+      Not because 14×14 is a bad idea — it was simply <strong>undertrained</strong>,
+      and the logs say so plainly. Neurons fired 14,543 times during learning versus
+      38,084 in the winning run: about <strong>121 learning events each instead of
+      340</strong>. Only 51 of 120 neurons ever woke up, and their learned pictures
+      came back nearly blank. It was handed 2.4× more pixels to make sense of and a
+      third of the practice. Worth retrying with more images and the timesteps back
+      at 20.
+    </p>
+
+    <h3>One stubborn problem</h3>
+    <p>
+      Digits <strong>4 and 5 score 0%</strong> in every wide run. In the best run,
+      digit 5 was never assigned a single neuron — impossible to predict,
+      structurally. Digit 4 had 13 neurons assigned and <em>still</em> got none
+      right; its neurons never won when it counted. Curiously, digit coverage
+      improved steadily across the runs — 7 of 10 digits, then 9, then all 10 — even
+      as accuracy peaked in the middle. Fixing 4 and 5 is the most promising next
+      step.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="head"><span class="num">07</span><h2>How good is this, honestly?</h2></div>
+  <div class="verdict">
+    <div class="vcard">
+      <h4>What genuinely works</h4>
+      <ul>
+        <li><strong>It learns unsupervised.</strong> During learning it is never told what any picture is. It groups similar shapes by itself; labels are attached afterwards purely to score it.</li>
+        <li><strong>The learning happens in the hardware.</strong> No PC, no backpropagation. Connection strengths are updated by the circuit as spikes arrive. This is the hard part, and it works.</li>
+        <li><strong>It learned from 720 examples.</strong> Conventional systems use tens of thousands.</li>
+        <li><strong>It's real, synthesisable hardware</strong> — not a Python model of hardware. It could go onto an FPGA.</li>
+        <li><strong>It scales.</strong> The multi-room wiring is tested to 1024 neurons, and full-resolution MNIST fits the design.</li>
+      </ul>
+    </div>
+    <div class="vcard lim">
+      <h4>What it can't do yet</h4>
+      <ul>
+        <li><strong>42% is a long way from solved.</strong> Published work using this same family of learning rule reaches far higher, with more neurons and far more training. This is a working foundation, not a competitive recogniser.</li>
+        <li><strong>Two of the ten digits don't work at all.</strong></li>
+        <li><strong>Simulation is painfully slow.</strong> Hours per experiment is the single biggest brake on progress. Real hardware removes it entirely.</li>
+        <li><strong>The two-stage design is a dead end as built.</strong> It needs a different way of passing information between layers before depth will help.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="col stack" style="margin-top:1.75rem">
+    <p>
+      <strong>The fair summary:</strong> the hard, novel thing — a chip that rewires
+      itself while running, with no outside help — is built and demonstrably works.
+      Turning it into an accurate recogniser is the next phase, and the obvious moves
+      are more neurons, more training, and getting off the simulator.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="head"><span class="num">08</span><h2>When something goes wrong</h2></div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>What you see</th><th>What it means</th></tr></thead>
+      <tbody>
+        <tr><td class="n">iverilog: command not found</td><td>Simulator not installed — see section 02.</td></tr>
+        <tr><td class="n">missing data/mnist/…</td><td>Run <code>make download_mnist</code>.</td></tr>
+        <tr><td class="n">excitatory spikes: 0</td><td>Nothing fired. Lower <code>MNIST_THRESHOLD</code> to about 900.</td></tr>
+        <tr><td class="n">must be a power of 2</td><td>Room size has to be 64, 128, 256, 512 or 1024.</td></tr>
+        <tr><td class="n">leaves no room for neurons</td><td>Picture too big for the room — raise <code>MNIST_NEURONS</code>.</td></tr>
+        <tr><td class="n">health line not all zeros</td><td>A real hardware fault. Ignore the score entirely.</td></tr>
+        <tr><td class="n">plates all solid</td><td>Connections maxed out — learning ran away.</td></tr>
+        <tr><td class="n">plates blank</td><td>Those neurons never won. Usually undertrained.</td></tr>
+        <tr><td class="n">it's been hours</td><td>Normal. Watch it with <code>tail -f runs/&lt;newest&gt;/run.log</code>.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  Full technical detail lives in <code>stdp_engine/README.md</code>; every defect
+  found during bring-up, with evidence, is in <code>DIAGNOSIS.md</code>. The plates
+  on this page are real weights read out of
+  <code>runs/2026-08-25_032537_mnist_1cluster/</code>.
+</footer>
+
+</div>
+
+<script>
+  // Receptive fields read out of the chip's weight memory after the 1-cluster run.
+  // 0 = no connection, 4 = fully potentiated.
+  var FIELDS = [
+    {label:"learned a 0", meta:"neuron 100 · mean weight 100", g:[
+      [0,0,0,0,0,1,3,2,1,1],[0,0,0,0,1,4,4,4,2,0],[0,0,0,0,4,1,0,4,0,0],
+      [0,0,2,3,4,1,2,4,4,0],[0,0,1,1,3,2,4,4,4,0],[0,1,4,1,0,1,4,4,3,0],
+      [0,4,4,3,0,3,4,4,3,0],[0,4,4,4,4,3,3,1,0,0],[3,4,4,4,4,4,2,0,0,0],
+      [0,1,0,4,1,1,1,0,0,0]]},
+    {label:"learned a 1", meta:"neuron 102 · mean weight 47", g:[
+      [0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,4,4,3,0],[0,0,0,0,0,0,4,4,0,0],
+      [0,0,0,0,0,4,4,0,0,0],[0,0,0,0,2,4,2,0,0,0],[0,0,0,0,4,4,0,0,0,0],
+      [0,0,0,1,4,4,0,0,0,0],[0,0,0,4,4,0,0,0,0,0],[0,0,4,4,0,0,0,0,0,0],
+      [0,0,4,4,0,0,0,0,0,0]]},
+    {label:"learned a 7", meta:"neuron 101 · mean weight 66", g:[
+      [0,0,0,0,0,0,1,0,0,0],[0,0,0,0,0,0,4,4,1,0],[0,0,0,0,4,4,4,4,4,0],
+      [0,0,0,0,4,0,0,4,0,0],[0,0,0,3,2,1,3,4,0,0],[0,0,0,4,2,4,4,1,0,0],
+      [0,0,0,2,4,4,2,1,0,0],[0,0,0,4,4,4,1,0,0,0],[0,0,2,4,4,0,0,0,0,0],
+      [0,0,4,0,0,0,0,0,0,0]]},
+    {label:"never won", meta:"neuron 104 · no label assigned", g:[
+      [1,1,1,1,2,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1],[2,2,1,2,1,2,1,2,1,1],
+      [1,2,1,2,1,2,2,2,1,1],[1,1,2,1,1,1,1,1,1,1],[1,1,1,2,2,1,1,1,1,1],
+      [1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,2,1,1],[1,1,1,1,1,1,1,1,1,1],
+      [1,1,1,1,1,1,2,1,1,1]]}
+  ];
+
+  var host = document.getElementById("plates");
+  FIELDS.forEach(function (f) {
+    var fig = document.createElement("figure");
+    fig.className = "plate";
+    fig.style.margin = "0";
+    var grid = document.createElement("div");
+    grid.className = "rf";
+    grid.setAttribute("role", "img");
+    grid.setAttribute("aria-label", "Learned connection strengths: " + f.label);
+    f.g.forEach(function (row) {
+      row.forEach(function (v) {
+        var cell = document.createElement("i");
+        cell.className = "w" + v;
+        grid.appendChild(cell);
+      });
+    });
+    var cap = document.createElement("figcaption");
+    cap.innerHTML = "<b>" + f.label + "</b>" + f.meta;
+    fig.appendChild(grid);
+    fig.appendChild(cap);
+    host.appendChild(fig);
+  });
+
+  // Accuracy comparison. One measure, one hue; guessing is a reference line,
+  // not a bar, because it is a threshold rather than a result.
+  var RESULTS = [
+    {name:"Wide",           sub:"4 rooms · 112 neurons", v:41.67, hi:true},
+    {name:"Wide at 14×14",  sub:"2 rooms · 120 neurons", v:32.92},
+    {name:"One cluster",    sub:"1 room · 28 neurons",   v:29.58},
+    {name:"Layered",        sub:"5 rooms · 32 outputs",  v:11.25}
+  ];
+  var MAX = 50, BASE = 10;
+  var bars = document.getElementById("bars");
+
+  RESULTS.forEach(function (r) {
+    var row = document.createElement("div");
+    row.className = "bar-row";
+    row.innerHTML =
+      '<div class="bar-lab"><b>' + r.name + "</b>" + r.sub + "</div>" +
+      '<div class="track"><div class="fill' + (r.hi ? " hi" : "") +
+      '" style="width:0"><span>' + r.v.toFixed(2) + "%</span></div></div>";
+    bars.appendChild(row);
+    var fill = row.querySelector(".fill");
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { fill.style.width = (r.v / MAX * 100) + "%"; });
+    });
+  });
+
+  // Reference line sits in the track column, so offset by the label column.
+  var ref = document.createElement("div");
+  ref.className = "ref";
+  var lab = document.createElement("div");
+  lab.className = "ref-lab";
+  lab.textContent = "guessing · 10%";
+  bars.appendChild(ref);
+  bars.appendChild(lab);
+
+  function placeRef() {
+    var track = bars.querySelector(".track");
+    if (!track) return;
+    var left = track.offsetLeft + track.offsetWidth * (BASE / MAX);
+    ref.style.left = left + "px";
+    lab.style.left = left + "px";
+  }
+  placeRef();
+  window.addEventListener("resize", placeRef);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(placeRef);
+</script>

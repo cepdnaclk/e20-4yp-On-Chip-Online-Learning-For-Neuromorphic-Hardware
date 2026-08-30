@@ -59,8 +59,9 @@ already have the files it just says `[skip]` and exits.
 code/ip/03.learning-rule/stdp_engine
 ```
 
-> **Check it works:** `make test_all` runs seven quick self-checks on the
-> individual pieces and takes under a minute. If those pass, the setup is good.
+> **Check it works:** `make test_all` runs seven self-checks on the individual
+> pieces — these are small module tests, not a full simulation, so they finish
+> quickly. If they pass, the setup is good.
 
 ---
 
