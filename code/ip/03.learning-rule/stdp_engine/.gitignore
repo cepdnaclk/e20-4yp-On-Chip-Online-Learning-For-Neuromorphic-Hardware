@@ -15,3 +15,7 @@ out*.log
 
 # archived run outputs are kept, but not the bulky per-run spike data
 runs/**/*.hex
+
+# A run.log IS the experiment record - the root .gitignore *.log rule was
+# silently dropping all of them, leaving only INFO.txt headlines.
+!runs/**/*.log

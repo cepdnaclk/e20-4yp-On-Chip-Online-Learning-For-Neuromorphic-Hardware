@@ -1,0 +1,150 @@
+================================================================
+  STDP NEUROMORPHIC ACCELERATOR - MNIST
+----------------------------------------------------------------
+  cluster neurons : 128
+  input layer     : 100  (10x10, neurons 0..99)
+  excitatory layer: 28  (neurons 100..127, WTA)
+  synapses learned: 2800
+  timesteps/image : 20
+  base threshold  : 1500
+  LTP/LTD shift   : 3 / 5
+  images          : 720 train / 240 assign / 240 test
+================================================================
+
+--- Phase 1: unsupervised STDP training (720 images) ---
+  [train]   50 / 720    exc spikes: 449   t=5024707000  drainTO=0
+  [train]  100 / 720    exc spikes: 1062   t=10497017000  drainTO=0
+  [train]  150 / 720    exc spikes: 1700   t=15839497000  drainTO=0
+  [train]  200 / 720    exc spikes: 2363   t=21226227000  drainTO=0
+  [train]  250 / 720    exc spikes: 3067   t=26910947000  drainTO=0
+  [train]  300 / 720    exc spikes: 3737   t=32305647000  drainTO=0
+  [train]  350 / 720    exc spikes: 4470   t=37814577000  drainTO=0
+  [train]  400 / 720    exc spikes: 5164   t=43125957000  drainTO=0
+  [train]  450 / 720    exc spikes: 5846   t=48336197000  drainTO=0
+  [train]  500 / 720    exc spikes: 6527   t=53740167000  drainTO=0
+  [train]  550 / 720    exc spikes: 7221   t=59119887000  drainTO=0
+  [train]  600 / 720    exc spikes: 7922   t=64311737000  drainTO=0
+  [train]  650 / 720    exc spikes: 8621   t=69523167000  drainTO=0
+  [train]  700 / 720    exc spikes: 9366   t=75194777000  drainTO=0
+  training done. total excitatory spikes: 9673
+
+--- Phase 2: neuron label assignment (240 images) ---
+  neurons that responded: 23 / 28
+  spikes per neuron    : 257 88 42 314 0 82 159 0 129 192 83 116 55 234 280 319 0 0 2 464 1 0 102 476 119 141 1 1
+  neurons per digit    :  0:4  1:5  2:0  3:3  4:4  5:2  6:0  7:3  8:2  9:0
+
+--- Learned receptive fields (weights read back from bank_memory) ---
+    neuron 100  (label 0, mean weight 100)
+                ' ++..' ' 
+              ' ######..  
+              ##'   ##    
+          ..++##' ..####  
+          ' ' ++..######  
+        ' ##'   ' ####++  
+        ####++  ++####++  
+        ########++++'     
+      ++##########..      
+        '   ##' ' '       
+    neuron 101  (label 7, mean weight 66)
+                  '       
+                  ####'   
+              ##########  
+              ##    ##    
+            ++..' ++##    
+            ##..####'     
+            ..####..'     
+            ######'       
+          ..####          
+          ##              
+    neuron 102  (label 1, mean weight 47)
+                          
+                  ####++  
+                  ####    
+                ####      
+              ..##..      
+              ####        
+            ' ####        
+            ####          
+          ####            
+          ####            
+    neuron 103  (label 3, mean weight 106)
+                  ' ##    
+              ########'   
+            ++++########  
+            ..####..  ..  
+        ' ' ..##########  
+        ' ######++######  
+        ..##' ####....    
+      ' ++++######  ' ..  
+      ..' ##++' ##  '     
+        ..######' '       
+    neuron 104  (label -1, mean weight 62)
+      ' ' ' ' ..' ' ' ' ' 
+      ' ' ' ' ' ' ' ' ' ' 
+      ....' ..' ..' ..' ' 
+      ' ..' ..' ......' ' 
+      ' ' ..' ' ' ' ' ' ' 
+      ' ' ' ....' ' ' ' ' 
+      ' ' ' ' ' ' ' ' ' ' 
+      ' ' ' ' ' ' ' ..' ' 
+      ' ' ' ' ' ' ' ' ' ' 
+      ' ' ' ' ' ' ..' ' ' 
+    neuron 105  (label 3, mean weight 62)
+                          
+            ' ####  ++    
+            ++########    
+          ' ##++    ##    
+            ########..    
+            ++######      
+                ####      
+                '         
+            ++##  ' ..    
+            ##' ##..      
+
+--- Phase 3: inference (240 images) ---
+  [test]   25 / 240    correct: 9    accuracy: 36.0%
+  [test]   50 / 240    correct: 16    accuracy: 32.0%
+  [test]   75 / 240    correct: 29    accuracy: 38.7%
+  [test]  100 / 240    correct: 37    accuracy: 37.0%
+  [test]  125 / 240    correct: 46    accuracy: 36.8%
+  [test]  150 / 240    correct: 55    accuracy: 36.7%
+  [test]  175 / 240    correct: 58    accuracy: 33.1%
+  [test]  200 / 240    correct: 62    accuracy: 31.0%
+  [test]  225 / 240    correct: 67    accuracy: 29.8%
+
+================================================================
+  RESULTS
+----------------------------------------------------------------
+  Test images        : 240
+  Correct            : 71
+  ACCURACY           : 29.58 %
+  Random baseline    : 10.00 %
+
+  Per-digit accuracy:
+    digit 0 :  23 /  24   (95.8%)
+    digit 1 :  20 /  31   (64.5%)
+    digit 2 :   0 /  21   (0.0%)
+    digit 3 :   1 /  23   (4.3%)
+    digit 4 :   2 /  29   (6.9%)
+    digit 5 :   4 /  16   (25.0%)
+    digit 6 :   0 /  21   (0.0%)
+    digit 7 :  11 /  32   (34.4%)
+    digit 8 :  10 /  20   (50.0%)
+    digit 9 :   0 /  23   (0.0%)
+
+  Confusion matrix (rows = true, cols = predicted):
+           0   1   2   3   4   5   6   7   8   9
+    0 :   23   0   0   0   0   0   0   0   1   0
+    1 :    0  20   0   0   0   1   0   0  10   0
+    2 :   10   0   0   1   0   0   0   0  10   0
+    3 :    7   0   0   1   0   4   0   0  11   0
+    4 :   17   1   0   0   2   5   0   0   4   0
+    5 :    4   0   0   0   0   4   0   0   8   0
+    6 :    9   0   0   0   0   2   0   1   9   0
+    7 :   10   2   0   0   0   1   0  11   8   0
+    8 :    6   1   0   0   0   3   0   0  10   0
+    9 :    6   0   0   1   1   4   0   2   9   0
+
+  Health: excitatory spikes=16638  drain timeouts=0  queue overflow=0  stdp timeout=0
+================================================================
+tb/tb_mnist_stdp.v:466: $finish called at 130392557000 (1ps)
