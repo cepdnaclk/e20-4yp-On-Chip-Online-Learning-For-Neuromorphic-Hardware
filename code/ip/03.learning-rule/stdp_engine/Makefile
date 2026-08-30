@@ -53,10 +53,10 @@ RTL_V2 = $(RTL_LEAF_NO_NEURON) $(RTL_MID) $(RTL_TOP)
 # MNIST configuration — override on the command line:
 #   make test_mnist MNIST_IMAGES=500 MNIST_TIMESTEPS=30 MNIST_TOP_K=5
 # =============================================================================
-MNIST_IMAGES      ?= 200
-MNIST_TIMESTEPS   ?= 20
-MNIST_TOP_K       ?= 3
-MNIST_INIT_WEIGHT ?= 200
+# NOTE: MNIST_IMAGES / MNIST_TIMESTEPS are defined once, further down, in the
+# "MNIST configuration" block. They used to be defined here as well; because
+# Make's ?= only assigns when unset, this earlier block silently won and the
+# real default was 200, not the documented 1200.
 MNIST_DATA_DIR    ?= data/mnist
 MNIST_SPLIT       ?= test
 
@@ -118,24 +118,6 @@ test_spike_input_queue: dir
 		$(RTL_DIR)/spike_input_queue.v \
 		$(TB_DIR)/tb_spike_input_queue.v
 	$(VVP) $(BUILD_DIR)/tb_spike_input_queue.vvp
-
-# Original integration test — uses real neuron files + init_weights.hex
-test_neuron_cluster: dir
-	$(IVERILOG) -o $(BUILD_DIR)/tb_neuron_cluster.vvp \
-		$(RTL_ALL) \
-		$(TB_DIR)/tb_neuron_cluster.v
-	@cp $(TB_DIR)/init_weights.hex ./
-	$(VVP) $(BUILD_DIR)/tb_neuron_cluster.vvp
-
-# v2 integration test — 16-neuron, inline init, stub neuron
-# Real neuron files are excluded. The stub (simple_LIF_Neuron_Model)
-# is defined at the top of tb_neuron_cluster_v2.v.
-# No init_weights.hex required — all memory set inline via direct assignment.
-test_neuron_cluster_v2: dir
-	$(IVERILOG) -o $(BUILD_DIR)/tb_neuron_cluster_v2.vvp \
-		$(RTL_V2) \
-		$(TB_DIR)/tb_neuron_cluster_v2.v
-	$(VVP) $(BUILD_DIR)/tb_neuron_cluster_v2.vvp
 
 
 # =============================================================================
@@ -277,89 +259,15 @@ mnist_wide: dir
 	@$(ARCHIVE) mnist_wide $(BUILD_DIR)/tb_mnist_wide.vvp $(TB_DIR)/mnist_config_wide.vh
 
 # =============================================================================
-# LEGACY MNIST inference test (superseded by 'make mnist')
-# =============================================================================
-# Uses RTL_ALL (real simple_LIF_Neuron_Model) and 256 neurons.
-#
-# Step 1: Python generates mnist_spikes.hex, mnist_labels.hex, init_weights.hex
-#         in tb/ using the MNIST_* variables above.
-# Step 2: Iverilog compiles tb_mnist_inference.v with RTL_ALL.
-# Step 3: VVP runs from the project root; hex files are copied here so
-#         $readmemh("mnist_spikes.hex", ...) resolves correctly.
-#
-# Prerequisites:
-#   pip install -r tools/requirements.txt
-#   MNIST IDX files in $(MNIST_DATA_DIR)/   OR  run  make download_mnist  first.
-#
-# Quick examples:
-#   make test_mnist                                    # 200 images, defaults
-#   make test_mnist MNIST_IMAGES=500                   # 500 images
-#   make test_mnist MNIST_IMAGES=100 MNIST_TIMESTEPS=30 MNIST_TOP_K=5
-#   make test_mnist MNIST_INIT_WEIGHT=230              # higher weights → more firing
-# =============================================================================
 
+# =============================================================================
+# MNIST data download
+# =============================================================================
 download_mnist:
 	@echo "Downloading MNIST IDX files into $(MNIST_DATA_DIR)/ ..."
 	@mkdir -p $(MNIST_DATA_DIR)
-	python3 tools/prepare_mnist.py \
-		--download \
-		--images 1 \
-		--data-dir $(MNIST_DATA_DIR) \
-		--output-dir /tmp
+	python3 tools/download_mnist.py --data-dir $(MNIST_DATA_DIR)
 	@echo "Download complete. Files are in $(MNIST_DATA_DIR)/"
-
-test_mnist: dir
-	@echo ""
-	@echo "=== Step 1: Generating MNIST spike patterns ==="
-	python3 tools/prepare_mnist.py \
-		--images       $(MNIST_IMAGES) \
-		--timesteps    $(MNIST_TIMESTEPS) \
-		--top-k        $(MNIST_TOP_K) \
-		--init-weight  $(MNIST_INIT_WEIGHT) \
-		--split        $(MNIST_SPLIT) \
-		--data-dir     $(MNIST_DATA_DIR) \
-		--output-dir   $(TB_DIR)
-	@echo ""
-	@echo "=== Step 2: Compiling MNIST testbench ==="
-	$(IVERILOG) -o $(BUILD_DIR)/tb_mnist_inference.vvp \
-		$(RTL_ALL) \
-		$(TB_DIR)/tb_mnist_inference.v
-	@echo ""
-	@echo "=== Step 3: Staging hex files ==="
-	@cp $(TB_DIR)/mnist_spikes.hex ./
-	@cp $(TB_DIR)/mnist_labels.hex ./
-	@cp $(TB_DIR)/init_weights.hex ./
-	@echo ""
-	@echo "=== Step 4: Running simulation ==="
-	$(VVP) $(BUILD_DIR)/tb_mnist_inference.vvp
-
-# =============================================================================
-# MNIST debug target — single image, all pipeline stages monitored
-# Generates tb_mnist_debug.vcd for GTKWave.
-#
-# Run AFTER make test_mnist (reuses hex files already in tb/).
-#   make test_mnist_debug        — compile and simulate
-#   make wave_mnist_debug        — open waveform in GTKWave
-# =============================================================================
-test_mnist_debug: dir
-	@echo "=== Compiling MNIST debug testbench ==="
-	$(IVERILOG) -o $(BUILD_DIR)/tb_mnist_inference_debug.vvp \
-		$(RTL_ALL) \
-		$(TB_DIR)/tb_mnist_inference_debug.v
-	@echo "=== Staging hex files (run make test_mnist first if missing) ==="
-	@cp $(TB_DIR)/mnist_spikes.hex  ./ 2>/dev/null || \
-	    (echo "ERROR: tb/mnist_spikes.hex missing — run 'make test_mnist' first." && exit 1)
-	@cp $(TB_DIR)/mnist_labels.hex  ./
-	@cp $(TB_DIR)/init_weights.hex  ./
-	@echo "=== Running debug simulation ==="
-	$(VVP) $(BUILD_DIR)/tb_mnist_inference_debug.vvp
-
-wave_mnist_debug:
-	$(GTKWAVE) tb_mnist_debug.vcd &
-
-# =============================================================================
-# Run all unit + integration tests (MNIST excluded — run separately)
-# =============================================================================
 
 test_all: \
     test_global_decay_timer \
@@ -368,12 +276,11 @@ test_all: \
     test_banked_weight_memory \
     test_weight_update_logic \
     test_weight_distribution_receiver \
-    test_spike_input_queue \
-    test_neuron_cluster_v2
+    test_spike_input_queue
 	@echo ""
 	@echo "============================================"
 	@echo "  All unit/integration tests completed."
-	@echo "  Run 'make test_mnist' separately for MNIST."
+	@echo "  Run 'make mnist' for the full MNIST experiment."
 	@echo "============================================"
 
 # =============================================================================

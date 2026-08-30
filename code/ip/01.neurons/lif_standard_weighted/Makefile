@@ -27,7 +27,7 @@ sim: $(TARGET)
 
 $(TARGET): $(RTL_SOURCES) $(TB_SOURCES)
 	@mkdir -p $(BUILD_DIR)
-	$(IVERILOG) -o $(TARGET) -I$(RTL_DIR) -I../../../global_inc $(TB_SOURCES) $(RTL_SOURCES)
+	$(IVERILOG) -o $(TARGET) -I$(RTL_DIR) $(TB_SOURCES) $(RTL_SOURCES)
 
 wave:
 	$(GTKWAVE) $(BUILD_DIR)/lif_standard.vcd &

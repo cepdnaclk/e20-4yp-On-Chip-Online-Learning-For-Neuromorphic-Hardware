@@ -6,8 +6,12 @@ in the RTL's SRAM and are updated by the chip as spikes arrive.
 
 ```bash
 sudo pacman -S iverilog     # the only dependency
+make download_mnist         # fetch the MNIST data (once)
 make mnist                  # prepare data -> build -> train -> classify -> accuracy
 ```
+
+> Not a hardware person? Read [`HOW-TO-RUN.md`](../../../../HOW-TO-RUN.md) in
+> the project root — same material, plain English, no jargon.
 
 ---
 
@@ -100,11 +104,25 @@ All 1200 images, identical learning constants and seed:
 | 1 cluster × 128 | 100 | 0 | 28 | 29.58 % |
 | **4 clusters × 128 (wide)** | **100** | **0** | **112** | **41.67 %** |
 | 5 clusters × 64 (layered) | 100 | 32 | 32 | 11.25 % |
+| 2 clusters × 256 (wide, 14×14) | 196 | 0 | 120 | 32.92 % |
 | random guessing | — | — | — | 10.00 % |
 
 **Width beats depth on this hardware.** Going from 28 to 112 neurons lifted the
 digits that had at least one neuron assigned from 7/10 to 9/10, and responding
 neurons from 23/28 to 87/112.
+
+The 14×14 wide run is **undertrained, not resolution-limited**: 14 543 training
+spikes against 38 084 for the 10×10 wide run — about 121 learning events per
+neuron instead of 340. Only 51 of 120 neurons ever responded, mean weight
+stalled at 60, and the receptive fields came back nearly blank. It was given
+2.4× the input dimensionality and a third of the practice. Retry with more
+images and `MNIST_TIMESTEPS=20`.
+
+Digits **4 and 5 score 0 % in every wide run**. In the 10×10 wide run digit 5
+was assigned no neuron at all, making it structurally unpredictable; digit 4
+had 13 neurons assigned and still scored 0/29. Digit coverage improved across
+the runs (7/10 → 9/10 → 10/10 digits assigned) while accuracy peaked in the
+middle. This is the most promising thing to fix next.
 
 The layered version is the only one with real hidden neurons and the only one
 that uses the inter-cluster router for a real workload. It runs correctly —
@@ -204,8 +222,8 @@ a real fault, not just a poor score.
 | `tools/` | data preparation and the run archiver |
 | `runs/` | every past run, timestamped |
 | `data/mnist/` | MNIST source data |
-| `legacy/` | superseded files, kept for reference only |
 | `DIAGNOSIS.md` | every defect found in the original design, with evidence |
+| `../../../../attic/` | superseded files and removed Makefile targets, kept for reference |
 
 Key modules: `neuron_cluster.v` (one cluster), `stdp_controller.v` (the FSM that
 does the work), `banked_weight_memory.v` (the weights), `lif_neuron.v` (the
