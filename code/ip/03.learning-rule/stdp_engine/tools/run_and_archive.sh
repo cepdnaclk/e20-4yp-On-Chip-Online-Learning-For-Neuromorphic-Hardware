@@ -28,7 +28,9 @@ done
 
 echo "=== running $NAME -> $DIR/run.log ==="
 START=$(date +%s)
-vvp "$VVP_FILE" 2>&1 | tee "$DIR/run.log"
+# stdbuf -oL: without it vvp block-buffers stdout through the pipe and the
+# log stays empty until the run ends, so you cannot watch progress.
+stdbuf -oL vvp "$VVP_FILE" 2>&1 | tee "$DIR/run.log"
 END=$(date +%s)
 
 {

@@ -1,0 +1,12 @@
+run       : mnist_wide_14x14
+date      : 2026-08-25T11:07:53+05:30
+git commit: d87835c
+host      : Linux x86_64
+duration  : 371 min 0 s
+
+--- headline ---
+  neurons that responded: 51 / 120
+  WIDE MULTI-CLUSTER RESULTS
+  Correct            : 79
+  ACCURACY           : 32.92 %
+  Health: excitatory spikes=25109  queue overflow=0  stdp timeout=0

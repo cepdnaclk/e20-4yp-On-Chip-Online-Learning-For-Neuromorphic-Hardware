@@ -191,42 +191,34 @@ module tb_mnist_wide;
         end
     endtask
 
-    // receptive field of one excitatory neuron, read back from bank_memory
+    // Receptive field probe. Icarus cannot index a generate scope with a
+    // runtime variable, so neuron 0 of every cluster is flattened into a wire
+    // array by a genvar loop. This works for any NUM_CLUSTERS.
+    wire [7:0] rf_probe [0:NUM_CLUSTERS*NUM_INPUT-1];
+    genvar gcl, gpx;
+    generate
+        for (gcl = 0; gcl < NUM_CLUSTERS; gcl = gcl + 1) begin : rfc
+            for (gpx = 0; gpx < NUM_INPUT; gpx = gpx + 1) begin : rfp
+                assign rf_probe[gcl*NUM_INPUT + gpx] =
+                    uut.gen_clusters[gcl].cluster_inst.weight_memory_inst
+                        .bank_memory[(NEURON_BASE + gpx) % NUM_NEURONS_PER_CLUSTER][NEURON_BASE];
+            end
+        end
+    endgenerate
+
     integer rf_r, rf_c, rf_p, rf_w, rf_sum;
     task dump_rf;
         input integer cluster;
-        input integer k;
         begin
             rf_sum = 0;
-            for (rf_p = 0; rf_p < NUM_INPUT; rf_p = rf_p + 1) begin
-                case (cluster)
-                  0: rf_w = uut.gen_clusters[0].cluster_inst.weight_memory_inst
-                              .bank_memory[(NEURON_BASE+k + rf_p) % NUM_NEURONS_PER_CLUSTER][NEURON_BASE+k];
-                  1: rf_w = uut.gen_clusters[1].cluster_inst.weight_memory_inst
-                              .bank_memory[(NEURON_BASE+k + rf_p) % NUM_NEURONS_PER_CLUSTER][NEURON_BASE+k];
-                  2: rf_w = uut.gen_clusters[2].cluster_inst.weight_memory_inst
-                              .bank_memory[(NEURON_BASE+k + rf_p) % NUM_NEURONS_PER_CLUSTER][NEURON_BASE+k];
-                  default: rf_w = uut.gen_clusters[3].cluster_inst.weight_memory_inst
-                              .bank_memory[(NEURON_BASE+k + rf_p) % NUM_NEURONS_PER_CLUSTER][NEURON_BASE+k];
-                endcase
-                rf_sum = rf_sum + rf_w;
-            end
-            $display("    cluster %0d neuron %0d (label %0d, mean weight %0d)",
-                     cluster, k, neuron_label[cluster*NUM_EXC + k], rf_sum/NUM_INPUT);
+            for (rf_p = 0; rf_p < NUM_INPUT; rf_p = rf_p + 1)
+                rf_sum = rf_sum + rf_probe[cluster*NUM_INPUT + rf_p];
+            $display("    cluster %0d neuron 0 (label %0d, mean weight %0d)",
+                     cluster, neuron_label[cluster*NUM_EXC], rf_sum/NUM_INPUT);
             for (rf_r = 0; rf_r < GRID; rf_r = rf_r + 1) begin
                 $write("      ");
                 for (rf_c = 0; rf_c < GRID; rf_c = rf_c + 1) begin
-                    rf_p = rf_r*GRID + rf_c;
-                    case (cluster)
-                      0: rf_w = uut.gen_clusters[0].cluster_inst.weight_memory_inst
-                                  .bank_memory[(NEURON_BASE+k + rf_p) % NUM_NEURONS_PER_CLUSTER][NEURON_BASE+k];
-                      1: rf_w = uut.gen_clusters[1].cluster_inst.weight_memory_inst
-                                  .bank_memory[(NEURON_BASE+k + rf_p) % NUM_NEURONS_PER_CLUSTER][NEURON_BASE+k];
-                      2: rf_w = uut.gen_clusters[2].cluster_inst.weight_memory_inst
-                                  .bank_memory[(NEURON_BASE+k + rf_p) % NUM_NEURONS_PER_CLUSTER][NEURON_BASE+k];
-                      default: rf_w = uut.gen_clusters[3].cluster_inst.weight_memory_inst
-                                  .bank_memory[(NEURON_BASE+k + rf_p) % NUM_NEURONS_PER_CLUSTER][NEURON_BASE+k];
-                    endcase
+                    rf_w = rf_probe[cluster*NUM_INPUT + rf_r*GRID + rf_c];
                     if      (rf_w > 200) $write("##");
                     else if (rf_w > 140) $write("++");
                     else if (rf_w >  80) $write("..");
@@ -329,7 +321,7 @@ module tb_mnist_wide;
 
         $display("");
         $display("--- Learned receptive fields (one per cluster) ---");
-        for (k_i = 0; k_i < NUM_CLUSTERS; k_i = k_i + 1) dump_rf(k_i, 0);
+        for (k_i = 0; k_i < NUM_CLUSTERS; k_i = k_i + 1) dump_rf(k_i);
 
         // ==================================================================
         $display("");
